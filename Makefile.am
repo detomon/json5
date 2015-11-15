@@ -1,9 +1,8 @@
-AM_CFLAGS = @CFLAGS@
+SUBDIRS = src test
+DIST_SUBDIRS = $(SUBDIRS)
 
-lib_LIBRARIES = libjson5.a
-
-libjson5_a_SOURCES = \
-	json5.c
-
-pkginclude_HEADERS = \
-	json5.h
+EXTRA_DIST = \
+	README.md \
+	LICENSE \
+	VERSION \
+	autogen.sh

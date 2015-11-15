@@ -1,0 +1,3 @@
+[submodule "unicode-table"]
+	path = unicode-table
+	url = https://github.com/detomon/unicode-table.git

@@ -9,7 +9,7 @@ int main (int argc, char const * argv [])
 		return RESULT_ERROR;
 	}
 
-	unsigned char const * string = "😐";
+	unsigned char const * string = "a  \tᏋ\vⶂ\f\rnc\n😐";
 
 	for (unsigned char const * c = string; *c; c ++) {
 		if (json5_tokenizer_put_byte (&tknzr, *c) < 0) {

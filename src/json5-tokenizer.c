@@ -120,7 +120,17 @@ typedef enum {
 	JSON5_TOK_STATE_NONE = 0,
 	JSON5_TOK_STATE_SPACE,
 	JSON5_TOK_STATE_STRING,
+	JSON5_TOK_STATE_STRING_ESCAPE,
+	JSON5_TOK_STATE_STRING_UNICODE,
 	JSON5_TOK_STATE_NUMBER,
+	JSON5_TOK_STATE_NUMBER_FOLLOW,
+	JSON5_TOK_STATE_NUMBER_SIGN,
+	JSON5_TOK_STATE_NUMBER_START,
+	JSON5_TOK_STATE_NUMBER_START_PERIOD,
+	JSON5_TOK_STATE_NUMBER_END_PERIOD,
+	JSON5_TOK_STATE_NUMBER_EXP,
+	JSON5_TOK_STATE_NUMBER_EXP_SIGN,
+	JSON5_TOK_STATE_NUMBER_EXP_DIGIT,
 	JSON5_TOK_STATE_COMMENT,
 	JSON5_TOK_STATE_ERROR,
 } json5_tok_state;
@@ -242,6 +252,25 @@ int json5_tokenizer_put_byte (json5_tokenizer * tknzr, unsigned c)
 
 int json5_tokenizer_put_char (json5_tokenizer * tknzr, unsigned c)
 {
+	UTInfo const * info;
+	json5_tok_type type = JSON5_TOK_OTHER;
+
+	if (c < 256) {
+		type = init_chars [c];
+	}
+	else {
+		info = UTLookupRune (c);
+
+		if (info -> flags & UTFlagLetter) {
+			type = JSON5_TOK_NAME;
+		}
+		else if (info -> flags & UTFlagSpace) {
+			type = JSON5_TOK_SPACE;
+		}
+	}
+
+	printf ("%-6d %d\n", c, type);
+
 	return 0;
 }
 

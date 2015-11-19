@@ -34,7 +34,7 @@
  */
 typedef enum {
 	// external
-	JSON5_TOK_NONE = 0,
+	JSON5_TOK_OTHER = 0,
 	JSON5_TOK_OBJ_LEFT,
 	JSON5_TOK_OBJ_RIGHT,
 	JSON5_TOK_ARR_LEFT,
@@ -112,14 +112,15 @@ typedef struct {
  * builds the syntax tree.
  */
 typedef struct {
+	short state;
+	short token_count;
+	short accept_count;
+	short aux_count;
 	size_t buffer_len;
 	size_t buffer_cap;
 	unsigned char * buffer;
 	json5_off offset;
 	json5_off token_start;
-	int state;
-	int token_count;
-	int accept_count;
 	json5_utf8_decoder decoder;
 } json5_tokenizer;
 

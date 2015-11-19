@@ -41,7 +41,7 @@ CFLAGS="$CFLAGS -std=c99 \-Wall \
 	-Wstrict-prototypes -Wpointer-arith \
 	-Wwrite-strings -Wcast-qual -Wcast-align \
 	-Wbad-function-cast \
-	-Wformat-security  -Wformat-nonliteral \
+	-Wformat-security \
 	-Wmissing-format-attribute \
 	-Winline"
 

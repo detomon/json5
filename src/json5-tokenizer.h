@@ -138,7 +138,7 @@ extern int json5_tokenizer_init (json5_tokenizer * tknzr);
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_reset (json5_tokenizer * tknzr);
+extern void json5_tokenizer_reset (json5_tokenizer * tknzr);
 
 /**
  * Destroy a tokenizer

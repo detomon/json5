@@ -21,6 +21,7 @@
  * IN THE SOFTWARE.
  */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include "json5-tokenizer.h"
@@ -177,6 +178,15 @@ static int json5_utf8_decode (json5_utf8_decoder * decoder, unsigned c, unsigned
 	return 0;
 }
 
+static void json5_tokenizer_set_error (json5_tokenizer * tknzr, char const * msg, ...)
+{
+	va_list args;
+
+	va_start (args, msg);
+	vsnprintf ((void *) tknzr -> buffer, tknzr -> buffer_cap, msg, args);
+	va_end (args);
+}
+
 int json5_tokenizer_init (json5_tokenizer * tknzr)
 {
 	memset (tknzr, 0, sizeof (*tknzr));
@@ -191,7 +201,7 @@ int json5_tokenizer_init (json5_tokenizer * tknzr)
 	return 0;
 }
 
-int json5_tokenizer_reset (json5_tokenizer * tknzr)
+void json5_tokenizer_reset (json5_tokenizer * tknzr)
 {
 	unsigned char * buffer = tknzr -> buffer;
 	size_t buffer_cap = tknzr -> buffer_cap;
@@ -218,8 +228,7 @@ int json5_tokenizer_put_byte (json5_tokenizer * tknzr, unsigned c)
 	status = json5_utf8_decode (&tknzr -> decoder, c, &value);
 
 	if (status < 0) {
-		snprintf (tknzr -> buffer, tknzr -> buffer_cap,
-			"Invalid byte '%02x' on line %lld",
+		json5_tokenizer_set_error (tknzr, "Invalid byte '%02x' on line %lld",
 			c, tknzr -> offset.lineno + 1);
 		return -1;
 	}
@@ -233,13 +242,13 @@ int json5_tokenizer_put_byte (json5_tokenizer * tknzr, unsigned c)
 
 int json5_tokenizer_put_char (json5_tokenizer * tknzr, unsigned c)
 {
-	printf ("> %x\n", c);
+	return 0;
 }
 
 char const * json5_tokenizer_get_error (json5_tokenizer const * tknzr)
 {
 	if (tknzr -> state == JSON5_TOK_STATE_ERROR) {
-		return tknzr -> buffer;
+		return (void *) tknzr -> buffer;
 	}
 
 	return NULL;

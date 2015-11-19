@@ -9,7 +9,10 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+
+# Checks for libraries.
+AC_CHECK_LIB([unicodetable])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h])
@@ -29,6 +32,8 @@ AC_CONFIG_FILES([
 	src/Makefile
 	test/Makefile
 ])
+
+AC_CONFIG_SUBDIRS([unicode-table])
 
 # Flags
 CFLAGS="$CFLAGS -std=c99 \-Wall \

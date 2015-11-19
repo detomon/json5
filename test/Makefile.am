@@ -1,5 +1,5 @@
 AM_CFLAGS = -I$(srcdir)/../src -L$(srcdir)/../src
-AM_LDADD = $(srcdir)/../src/libjson5.a
+AM_LDADD = $(srcdir)/../src/libjson5.a $(srcdir)/../unicode-table/src/libunicodetable.a
 
 check_PROGRAMS = \
 	test_json5 \

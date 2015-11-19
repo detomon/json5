@@ -28,21 +28,6 @@
 #include <sys/types.h>
 
 /**
- * Defines tokenizer options
- */
-typedef enum {
-	/**
-	 * The characters in the buffer should be stored as UTF-8 encoded string.
-	 * This is the default
-	 */
-	JSON5_TOK_OPTION_UTF_8 = 1 << 0,
-	/**
-	 * The characters in the buffer should be stored as native 32-bit integers
-	 */
-	JSON5_TOK_OPTION_UTF_32 = 1 << 1,
-} json5_tok_options;
-
-/**
  * Defines token types returned by the tokenizer
  *
  * Some of these token types are only used internally
@@ -51,24 +36,23 @@ typedef enum {
 	// external
 	JSON5_TOK_NONE = 0,
 	JSON5_TOK_OBJ_LEFT,
-	JSON5_TOK_OBJ_RIGH,
+	JSON5_TOK_OBJ_RIGHT,
 	JSON5_TOK_ARR_LEFT,
 	JSON5_TOK_ARR_RIGHT,
 	JSON5_TOK_COMMA,
 	JSON5_TOK_COLON,
 	JSON5_TOK_STRING,
 	JSON5_TOK_NUMBER,
-	JSON5_TOK_CONST,
+	JSON5_TOK_NAME,
 	JSON5_TOK_COMMENT,
 	// internal
 	JSON5_TOK_ESCAPE,
 	JSON5_TOK_PLUS,
 	JSON5_TOK_MINUS,
 	JSON5_TOK_PERIOD,
-	JSON5_TOK_LINEBREAK,
+	JSON5_TOK_SPACE,
 	// special
 	JSON5_TOK_END,
-	JSON5_TOK_ERROR,
 } json5_tok_type;
 
 /**
@@ -112,6 +96,15 @@ typedef struct {
 } json5_token;
 
 /**
+ * Used for decoding UTF-8 byte string
+ */
+typedef struct {
+	size_t length;
+	size_t count;
+	unsigned value;
+} json5_utf8_decoder;
+
+/**
  * Defines the tokenizer object
  *
  * It parses the tokens but does not validate the syntax.
@@ -119,7 +112,7 @@ typedef struct {
  * builds the syntax tree.
  */
 typedef struct {
-	size_t buffer_size;
+	size_t buffer_len;
 	size_t buffer_cap;
 	unsigned char * buffer;
 	json5_off offset;
@@ -127,6 +120,7 @@ typedef struct {
 	int state;
 	int token_count;
 	int accept_count;
+	json5_utf8_decoder decoder;
 } json5_tokenizer;
 
 /**
@@ -134,7 +128,7 @@ typedef struct {
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_init (json5_tokenizer * tknzr, json5_tok_options options);
+extern int json5_tokenizer_init (json5_tokenizer * tknzr);
 
 /**
  * Reset a tokenizer
@@ -142,12 +136,9 @@ extern int json5_tokenizer_init (json5_tokenizer * tknzr, json5_tok_options opti
  * It then can be used to tokenize a new JSON string. The allocated memory will
  * be preserved.
  *
- * `options` will override the options given to `json5_tokenizer_init`, unless
- * it is set to -1.
- *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_reset (json5_tokenizer * tknzr, json5_tok_options options);
+extern int json5_tokenizer_reset (json5_tokenizer * tknzr);
 
 /**
  * Destroy a tokenizer
@@ -161,7 +152,7 @@ extern void json5_tokenizer_destroy (json5_tokenizer * tknzr);
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c);
+extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, unsigned c);
 
 /**
  * Push Unicode character to the tokenizer
@@ -170,11 +161,11 @@ extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c);
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c);
+extern int json5_tokenizer_put_char (json5_tokenizer * tknzr, unsigned c);
 
 /**
  * Returns the last error message or NULL if no error is present
  */
-extern char const * json5_tokenizer_error (json5_tokenizer const * tknzr);
+extern char const * json5_tokenizer_get_error (json5_tokenizer const * tknzr);
 
 #endif /* ! _JSON5_TOKENIZER_H_ */

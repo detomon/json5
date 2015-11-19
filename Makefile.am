@@ -1,5 +1,5 @@
-SUBDIRS = src test
-DIST_SUBDIRS = $(SUBDIRS)
+SUBDIRS = src test unicode-table
+DIST_SUBDIRS = src test
 
 EXTRA_DIST = \
 	README.md \

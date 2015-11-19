@@ -24,7 +24,19 @@
 #ifndef _JSON5_H_
 #define _JSON5_H_
 
+#ifdef __cplusplus
+	extern "C" {
+#endif
+
 #include "json5-types.h"
 #include "json5-tokenizer.h"
+
+extern json5_encode ();
+
+extern json5_decode ();
+
+#ifdef __cplusplus
+	}
+#endif
 
 #endif /* ! _JSON5_H_ */

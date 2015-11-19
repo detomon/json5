@@ -1,10 +1,17 @@
-AM_CFLAGS = @CFLAGS@
+AM_CFLAGS = @CFLAGS@ -I$(srcdir)/../unicode-table/src
+
+BUILT_SOURCES = $(srcdir)/../unicode-table/src/unicode-table.c
+
+$(BUILT_SOURCES):
+	make -C $(srcdir)/../unicode-table
 
 lib_LIBRARIES = libjson5.a
 
 libjson5_a_SOURCES = \
 	json5.c \
 	json5-tokenizer.c
+
+libjson5_a_LIBADD = $(srcdir)/../unicode-table/src/libunicodetable.a
 
 pkginclude_HEADERS = \
 	json5.h \

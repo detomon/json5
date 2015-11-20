@@ -24,6 +24,8 @@
 #ifndef _JSON5_TOKENIZER_H_
 #define _JSON5_TOKENIZER_H_
 
+#define JSON5_NUM_TOKS 2
+
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -46,9 +48,9 @@ typedef enum {
 	JSON5_TOK_NAME,
 	JSON5_TOK_COMMENT,
 	// internal
+	JSON5_TOK_LINEBREAK,
 	JSON5_TOK_ESCAPE,
-	JSON5_TOK_PLUS,
-	JSON5_TOK_MINUS,
+	JSON5_TOK_SIGN,
 	JSON5_TOK_PERIOD,
 	JSON5_TOK_SPACE,
 	// special
@@ -86,8 +88,8 @@ typedef struct {
 typedef struct {
 	json5_tok_type type;
 	json5_tok_sub_type subtype;
-	char const * token;
-	size_t token_len;
+	unsigned char * token;
+	size_t length;
 	json5_off offset;
 	union {
 		int64_t i;
@@ -116,12 +118,15 @@ typedef struct {
 	short token_count;
 	short accept_count;
 	short aux_count;
+	int aux_value;
+	int seq_value;
 	size_t buffer_len;
 	size_t buffer_cap;
 	unsigned char * buffer;
 	json5_off offset;
 	json5_off token_start;
 	json5_utf8_decoder decoder;
+	json5_token tokens [JSON5_NUM_TOKS];
 } json5_tokenizer;
 
 /**
@@ -153,7 +158,7 @@ extern void json5_tokenizer_destroy (json5_tokenizer * tknzr);
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, unsigned c);
+extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c);
 
 /**
  * Push Unicode character to the tokenizer
@@ -162,7 +167,7 @@ extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, unsigned c);
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_put_char (json5_tokenizer * tknzr, unsigned c);
+extern int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c);
 
 /**
  * Returns the last error message or NULL if no error is present

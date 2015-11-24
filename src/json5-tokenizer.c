@@ -31,6 +31,15 @@
 #define BUF_MIN_FREE_SPACE 256
 
 /**
+ * Defines number types
+ */
+enum {
+	JSON5_NUMBER_INT = 1,
+	JSON5_NUMBER_FLOAT,
+	JSON5_NUMBER_HEX,
+};
+
+/**
  * Defines tokenizer states
  */
 typedef enum {
@@ -42,13 +51,11 @@ typedef enum {
 	JSON5_STATE_STRING_ESCAPE,
 	JSON5_STATE_STRING_HEXCHAR,
 	JSON5_STATE_NUMBER,
-	JSON5_STATE_NUMBER_SIGN,
-	JSON5_STATE_NUMBER_START,
-	JSON5_STATE_NUMBER_START_PERIOD,
-	JSON5_STATE_NUMBER_END_PERIOD,
+	JSON5_STATE_NUMBER_FRAC,
 	JSON5_STATE_NUMBER_EXP,
-	JSON5_STATE_NUMBER_EXP_SIGN,
-	JSON5_STATE_NUMBER_EXP_DIGIT,
+	JSON5_STATE_NUMBER_EXP_START,
+	JSON5_STATE_NUMBER_HEX,
+	JSON5_STATE_NUMBER_HEX_BEGIN,
 	JSON5_STATE_COMMENT,
 	JSON5_STATE_END,
 	JSON5_STATE_ERROR,
@@ -359,13 +366,13 @@ int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c) {
 
 	status = json5_utf8_decode (&tknzr -> decoder, c, &value);
 
-	if (status < 0) {
+	if (status == 1) {
+		return json5_tokenizer_put_char (tknzr, value);
+	}
+	else if (status < 0) {
 		json5_tokenizer_set_error (tknzr, "Invalid byte '%02x' on line %lld",
 			c, tknzr -> offset.lineno + 1);
 		return -1;
-	}
-	else if (status == 1) {
-		return json5_tokenizer_put_char (tknzr, value);
 	}
 
 	return 0;
@@ -478,9 +485,25 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 						accept = 1;
 						break;
 					}
-					case JSON5_TOK_PERIOD: {
-						state = JSON5_STATE_NUMBER_START_PERIOD;
+					case JSON5_TOK_SIGN:
+					case JSON5_TOK_NUMBER: {
+						state = JSON5_STATE_NUMBER;
 						char_type = JSON5_TOK_NUMBER;
+
+						memset (&tknzr -> number, 0, sizeof (tknzr -> number));
+						tknzr -> number.type = JSON5_NUMBER_INT;
+
+						if (c == '-') {
+							tknzr -> number.mant_is_neg = 1;
+						}
+						break;
+					}
+					case JSON5_TOK_PERIOD: {
+						state = JSON5_STATE_NUMBER_FRAC;
+						char_type = JSON5_TOK_NUMBER;
+
+						memset (&tknzr -> number, 0, sizeof (tknzr -> number));
+						tknzr -> number.type = JSON5_NUMBER_FLOAT;
 						break;
 					}
 					case JSON5_TOK_COMMA: {
@@ -489,12 +512,6 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 					}
 					case JSON5_TOK_COLON: {
 						accept = 1;
-						break;
-					}
-					case JSON5_TOK_SIGN:
-					case JSON5_TOK_NUMBER: {
-						state = JSON5_STATE_NUMBER;
-						char_type = JSON5_TOK_NUMBER;
 						break;
 					}
 					case JSON5_TOK_NAME: {
@@ -540,7 +557,7 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 						if (info -> flags & UTFlagNumber) {
 						}
 						else {
-							json5_tokenizer_push_back (tknzr, c);
+							json5_tokenizer_push_back (&char_state, c);
 						}
 
 						break;
@@ -624,7 +641,45 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 					goto error;
 				}
 			}
-			case JSON5_STATE_NUMBER_START_PERIOD: {
+			case JSON5_STATE_NUMBER_HEX_BEGIN: {
+				state = JSON5_STATE_NUMBER_HEX;
+				break;
+			}
+			case JSON5_STATE_NUMBER_HEX: {
+				// ...
+				break;
+			}
+			case JSON5_STATE_NUMBER: {
+				switch (c) {
+					// check if hex number
+					case 'x':
+					case 'X': {
+						// if number is "0"
+						if (tknzr -> number.mantissa == 0 && tknzr -> number.num_digits == 1) {
+							tknzr -> number.type = JSON5_NUMBER_HEX;
+							state = JSON5_STATE_NUMBER_HEX_BEGIN;
+						}
+						else {
+							goto unexpected_char;
+						}
+
+						break;
+					}
+					default: {
+
+						break;
+					}
+				}
+
+				break;
+			}
+			case JSON5_STATE_NUMBER_FRAC: {
+				break;
+			}
+			case JSON5_STATE_NUMBER_EXP: {
+				break;
+			}
+			case JSON5_STATE_NUMBER_EXP_START: {
 				break;
 			}
 			default: {
@@ -636,8 +691,14 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 		switch (state) {
 			case JSON5_STATE_SPACE:
 			case JSON5_STATE_STRING:
-			case JSON5_STATE_NAME: {
+			case JSON5_STATE_NAME:
+			case JSON5_STATE_NUMBER:
+			case JSON5_STATE_NUMBER_EXP: {
 				json5_tokenizer_put_char (tknzr, c);
+				break;
+			}
+			case JSON5_STATE_NUMBER_HEX: {
+				// ...
 				break;
 			}
 			case JSON5_STATE_STRING_HEXCHAR: {

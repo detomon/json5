@@ -115,11 +115,20 @@ typedef struct {
  */
 typedef struct {
 	short state;
+	short aux_count;
 	short token_count;
 	short accept_count;
-	short aux_count;
 	int aux_value;
-	int seq_value;
+	unsigned seq_value;
+	struct {
+		int64_t mantissa;
+		short num_digits;
+		short num_frac;
+		short exponent;
+		short type;
+		unsigned mant_is_neg:1;
+		unsigned frac_is_neg:1;
+	} number;
 	size_t buffer_len;
 	size_t buffer_cap;
 	unsigned char * buffer;

@@ -37,10 +37,10 @@
 typedef enum {
 	// external
 	JSON5_TOK_OTHER = 0,
-	JSON5_TOK_OBJ_LEFT,
-	JSON5_TOK_OBJ_RIGHT,
-	JSON5_TOK_ARR_LEFT,
-	JSON5_TOK_ARR_RIGHT,
+	JSON5_TOK_OBJ_OPEN,
+	JSON5_TOK_OBJ_CLOSE,
+	JSON5_TOK_ARR_OPEN,
+	JSON5_TOK_ARR_CLOSE,
 	JSON5_TOK_COMMA,
 	JSON5_TOK_COLON,
 	JSON5_TOK_STRING,
@@ -114,20 +114,23 @@ typedef struct {
  * builds the syntax tree.
  */
 typedef struct {
-	short state;
-	short aux_count;
-	short token_count;
-	short accept_count;
+	int state;
+	int aux_count;
+	int token_count;
+	int accept_count;
 	int aux_value;
 	unsigned seq_value;
 	struct {
-		int64_t mantissa;
-		short num_digits;
-		short num_frac;
-		short exponent;
-		short type;
-		unsigned mant_is_neg:1;
-		unsigned frac_is_neg:1;
+		unsigned sign:1;
+		unsigned exp_sign:1;
+		unsigned type:4;
+		int length;
+		int dec_pnt;
+		int exp;
+		union {
+			uint64_t i;
+			double f;
+		} mantissa;
 	} number;
 	size_t buffer_len;
 	size_t buffer_cap;

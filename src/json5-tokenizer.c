@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <float.h>
 #include "json5-tokenizer.h"
 #include "unicode-table.h"
 
@@ -34,9 +35,9 @@
  * Defines number types
  */
 enum {
-	JSON5_NUMBER_INT = 1,
-	JSON5_NUMBER_FLOAT,
+	JSON5_NUMBER_INT,
 	JSON5_NUMBER_HEX,
+	JSON5_NUMBER_FLOAT,
 };
 
 /**
@@ -51,11 +52,14 @@ typedef enum {
 	JSON5_STATE_STRING_ESCAPE,
 	JSON5_STATE_STRING_HEXCHAR,
 	JSON5_STATE_NUMBER,
+	JSON5_STATE_NUMBER_SIGN,
 	JSON5_STATE_NUMBER_FRAC,
 	JSON5_STATE_NUMBER_EXP,
+	JSON5_STATE_NUMBER_EXP_SIGN,
 	JSON5_STATE_NUMBER_EXP_START,
 	JSON5_STATE_NUMBER_HEX,
 	JSON5_STATE_NUMBER_HEX_BEGIN,
+	JSON5_STATE_NUMBER_DONE,
 	JSON5_STATE_COMMENT,
 	JSON5_STATE_END,
 	JSON5_STATE_ERROR,
@@ -82,10 +86,10 @@ static json5_tok_type const init_chars [256] = {
 	['\v'] = JSON5_TOK_SPACE,
 	['"']  = JSON5_TOK_STRING,
 	['\''] = JSON5_TOK_STRING,
-	['{']  = JSON5_TOK_OBJ_LEFT,
-	['}']  = JSON5_TOK_OBJ_RIGHT,
-	['[']  = JSON5_TOK_ARR_LEFT,
-	[']']  = JSON5_TOK_ARR_RIGHT,
+	['{']  = JSON5_TOK_OBJ_OPEN,
+	['}']  = JSON5_TOK_OBJ_CLOSE,
+	['[']  = JSON5_TOK_ARR_OPEN,
+	[']']  = JSON5_TOK_ARR_CLOSE,
 	['.']  = JSON5_TOK_PERIOD,
 	[',']  = JSON5_TOK_COMMA,
 	[':']  = JSON5_TOK_COLON,
@@ -380,6 +384,54 @@ int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c) {
 
 static void json5_tokenizer_utf8_encode (char string [], unsigned c) {
 	string [0] = '\0';
+
+	fprintf (stderr, "Uninplemented json5_tokenizer_utf8_encode\n");
+	abort ();
+}
+
+static void json5_tokenizer_conv_number_float (json5_tokenizer * tknzr) {
+	if (tknzr -> number.type != JSON5_NUMBER_FLOAT) {
+		tknzr -> number.mantissa.f = tknzr -> number.mantissa.i;
+		tknzr -> number.type = JSON5_NUMBER_FLOAT;
+	}
+}
+
+static void json5_tokenizer_number_add_digit (json5_tokenizer * tknzr, int value) {
+	if (tknzr -> number.type != JSON5_NUMBER_FLOAT) {
+		if (tknzr -> number.mantissa.i > INT64_MAX / 10) {
+			json5_tokenizer_conv_number_float (tknzr);
+		}
+	}
+
+	if (tknzr -> number.type != JSON5_NUMBER_FLOAT) {
+		tknzr -> number.mantissa.i = 10 * tknzr -> number.mantissa.i + value;
+
+		if (tknzr -> number.mantissa.i > INT64_MAX - value) {
+			json5_tokenizer_conv_number_float (tknzr);
+			tknzr -> number.mantissa.f += value;
+		}
+		else {
+			tknzr -> number.mantissa.i += value;
+		}
+	}
+	else {
+		tknzr -> number.mantissa.f = 10.0 * tknzr -> number.mantissa.f + value;
+	}
+}
+
+static void json5_tokenizer_exp_add_digit (json5_tokenizer * tknzr, int value) {
+	// ignore larger values
+	if (tknzr -> number.exp < DBL_MAX_10_EXP) {
+		tknzr -> number.exp = 10 * tknzr -> number.exp + value;
+	}
+}
+
+static void json5_tokenizer_number_end (json5_tokenizer * tknzr) {
+	if (tknzr -> number.type == JSON5_NUMBER_FLOAT) {
+		// ...
+	}
+
+	// ...
 }
 
 int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
@@ -465,36 +517,41 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 						tknzr -> aux_value = c;
 						break;
 					}
-					case JSON5_TOK_OBJ_LEFT: {
-						char_type = JSON5_TOK_OBJ_LEFT;
+					case JSON5_TOK_OBJ_OPEN: {
+						char_type = JSON5_TOK_OBJ_OPEN;
 						accept = 1;
 						break;
 					}
-					case JSON5_TOK_OBJ_RIGHT: {
-						char_type = JSON5_TOK_OBJ_RIGHT;
+					case JSON5_TOK_OBJ_CLOSE: {
+						char_type = JSON5_TOK_OBJ_CLOSE;
 						accept = 1;
 						break;
 					}
-					case JSON5_TOK_ARR_LEFT: {
-						char_type = JSON5_TOK_ARR_LEFT;
+					case JSON5_TOK_ARR_OPEN: {
+						char_type = JSON5_TOK_ARR_OPEN;
 						accept = 1;
 						break;
 					}
-					case JSON5_TOK_ARR_RIGHT: {
-						char_type = JSON5_TOK_ARR_RIGHT;
+					case JSON5_TOK_ARR_CLOSE: {
+						char_type = JSON5_TOK_ARR_CLOSE;
 						accept = 1;
 						break;
 					}
-					case JSON5_TOK_SIGN:
-					case JSON5_TOK_NUMBER: {
-						state = JSON5_STATE_NUMBER;
-						char_type = JSON5_TOK_NUMBER;
-
+					case JSON5_TOK_SIGN: {
+						state = JSON5_STATE_NUMBER_SIGN;
 						memset (&tknzr -> number, 0, sizeof (tknzr -> number));
-						tknzr -> number.type = JSON5_NUMBER_INT;
 
 						if (c == '-') {
-							tknzr -> number.mant_is_neg = 1;
+							tknzr -> number.sign = 1;
+						}
+						break;
+					}
+					case JSON5_TOK_NUMBER: {
+						state = JSON5_STATE_NUMBER;
+						memset (&tknzr -> number, 0, sizeof (tknzr -> number));
+
+						if (c == '-') {
+							tknzr -> number.sign = 1;
 						}
 						break;
 					}
@@ -541,6 +598,7 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 						break;
 					}
 					default: {
+						json5_tokenizer_push_back (&char_state, c);
 						accept = 1;
 						state = JSON5_STATE_NONE;
 					}
@@ -557,6 +615,7 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 						if (info -> flags & UTFlagNumber) {
 						}
 						else {
+							accept = 1;
 							json5_tokenizer_push_back (&char_state, c);
 						}
 
@@ -641,45 +700,125 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 					goto error;
 				}
 			}
-			case JSON5_STATE_NUMBER_HEX_BEGIN: {
-				state = JSON5_STATE_NUMBER_HEX;
+			case JSON5_STATE_NUMBER_SIGN: {
+				switch (char_type) {
+					case JSON5_TOK_NUMBER: {
+						state = JSON5_STATE_NUMBER;
+						break;
+					}
+					case JSON5_TOK_PERIOD: {
+						tknzr -> number.dec_pnt = tknzr -> number.length;
+						json5_tokenizer_conv_number_float (tknzr);
+						state = JSON5_STATE_NUMBER_FRAC;
+						break;
+					}
+					default: {
+						goto unexpected_char;
+						break;
+					}
+				}
 				break;
 			}
-			case JSON5_STATE_NUMBER_HEX: {
-				// ...
-				break;
-			}
-			case JSON5_STATE_NUMBER: {
-				switch (c) {
-					// check if hex number
-					case 'x':
-					case 'X': {
-						// if number is "0"
-						if (tknzr -> number.mantissa == 0 && tknzr -> number.num_digits == 1) {
-							tknzr -> number.type = JSON5_NUMBER_HEX;
-							state = JSON5_STATE_NUMBER_HEX_BEGIN;
-						}
-						else {
-							goto unexpected_char;
+			case JSON5_STATE_NUMBER_FRAC: {
+				switch (char_type) {
+					case JSON5_TOK_NUMBER: {
+						break;
+					}
+					default: {
+						switch (c) {
+							case 'e':
+							case 'E': {
+								state = JSON5_STATE_NUMBER_EXP_START;
+								break;
+							}
+							default: {
+								json5_tokenizer_push_back (&char_state, c);
+								state = JSON5_STATE_NUMBER_DONE;
+							}
 						}
 
 						break;
 					}
+				}
+				break;
+			}
+			case JSON5_STATE_NUMBER: {
+				switch (char_type) {
+					case JSON5_TOK_NUMBER: {
+						break;
+					}
+					case JSON5_TOK_PERIOD: {
+						tknzr -> number.dec_pnt = tknzr -> number.length;
+						json5_tokenizer_conv_number_float (tknzr);
+						state = JSON5_STATE_NUMBER_FRAC;
+						break;
+					}
 					default: {
+						switch (c) {
+							case 'e':
+							case 'E': {
+								state = JSON5_STATE_NUMBER_EXP_START;
+								break;
+							}
+							// check if hex number
+							case 'x':
+							case 'X': {
+								// if number is "0"
+								if (tknzr -> number.length == 1 && tknzr -> number.mantissa.i == 0) {
+									tknzr -> number.type = JSON5_NUMBER_HEX;
+									state = JSON5_STATE_NUMBER_HEX_BEGIN;
+								}
+								else {
+									goto unexpected_char;
+								}
 
+								break;
+							}
+							default: {
+								json5_tokenizer_push_back (&char_state, c);
+								state = JSON5_STATE_NUMBER_DONE;
+								break;
+							}
+						}
 						break;
 					}
 				}
 
 				break;
 			}
-			case JSON5_STATE_NUMBER_FRAC: {
+			case JSON5_STATE_NUMBER_HEX_BEGIN: {
+				state = JSON5_STATE_NUMBER_HEX;
+				break;
+			}
+			case JSON5_STATE_NUMBER_HEX: {
+				/*if (c < ) {
+
+				}
+				else {
+
+				}*/
 				break;
 			}
 			case JSON5_STATE_NUMBER_EXP: {
 				break;
 			}
 			case JSON5_STATE_NUMBER_EXP_START: {
+				switch (char_type) {
+					case JSON5_TOK_SIGN: {
+						if (c == '-') {
+							tknzr -> number.exp_sign = 1;
+						}
+						break;
+					}
+					case JSON5_TOK_NUMBER: {
+						state = JSON5_STATE_NUMBER_EXP;
+						break;
+					}
+					default: {
+						goto unexpected_char;
+						break;
+					}
+				}
 				break;
 			}
 			default: {
@@ -691,14 +830,29 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 		switch (state) {
 			case JSON5_STATE_SPACE:
 			case JSON5_STATE_STRING:
-			case JSON5_STATE_NAME:
-			case JSON5_STATE_NUMBER:
+			case JSON5_STATE_NAME: {
+				json5_tokenizer_put_char (tknzr, c);
+				break;
+			}
+			case JSON5_STATE_NUMBER: {
+				json5_tokenizer_number_add_digit (tknzr, info -> number.i);
+				json5_tokenizer_put_char (tknzr, c);
+				break;
+			}
 			case JSON5_STATE_NUMBER_EXP: {
+				json5_tokenizer_exp_add_digit (tknzr, info -> number.i);
 				json5_tokenizer_put_char (tknzr, c);
 				break;
 			}
 			case JSON5_STATE_NUMBER_HEX: {
-				// ...
+				json5_tokenizer_number_add_digit (tknzr, hex_chars [c] & 0xF);
+				json5_tokenizer_put_char (tknzr, c);
+				break;
+			}
+			case JSON5_STATE_NUMBER_DONE: {
+				json5_tokenizer_number_end (tknzr);
+				state = JSON5_STATE_NONE;
+				accept = 1;
 				break;
 			}
 			case JSON5_STATE_STRING_HEXCHAR: {

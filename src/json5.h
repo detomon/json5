@@ -28,8 +28,8 @@
 	extern "C" {
 #endif
 
-#include "json5-types.h"
 #include "json5-tokenizer.h"
+#include "json5-value.h"
 
 extern json5_encode ();
 

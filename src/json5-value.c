@@ -343,11 +343,11 @@ int json5_value_delete_prop (json5_value * value, char const * key, size_t key_l
 	json5_obj_prop * prop;
 
 	if (value -> type != JSON5_TYPE_OBJECT) {
-		return -1;
+		return 0;
 	}
 
 	if (value -> val.obj.cap == 0) {
-		return -1;
+		return 0;
 	}
 
 	hash = json5_get_hash (key, key_len);
@@ -358,6 +358,8 @@ int json5_value_delete_prop (json5_value * value, char const * key, size_t key_l
 		prop -> key = PLACEHOLDER_KEY;
 		json5_value_delete (&prop -> value, JSON5_TYPE_NULL);
 		value -> val.obj.len --;
+
+		return 1;
 	}
 
 	return 0;

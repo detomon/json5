@@ -1,15 +1,14 @@
 AM_CFLAGS = -I$(srcdir)/../src -L$(srcdir)/../src
-AM_LDADD = $(srcdir)/../src/libjson5.a $(srcdir)/../unicode-table/src/libunicodetable.a
+LDADD = $(srcdir)/../src/libjson5.a $(srcdir)/../unicode-table/src/libunicodetable.a
 
 check_PROGRAMS = \
-	test_json5 \
-	test_fail
+	test-value-scalar \
+	test-value-array \
+	test-value-object
 
-test_json5_SOURCES = test_json5.c
-test_json5_LDADD = $(AM_LDADD)
-
-test_fail_SOURCES = test_fail.c
-test_fail_LDADD = $(AM_LDADD)
+test_value_scalar_SOURCES = test-value-scalar.c
+test_value_array_SOURCES = test-value-array.c
+test_value_object_SOURCES = test-value-object.c
 
 TESTS_ENVIRONMENT = \
 	top_builddir=$(top_builddir); \
@@ -19,8 +18,6 @@ TESTS_ENVIRONMENT = \
 	export MallocGuardEdges=1;
 
 TESTS = \
-	test_json5 \
-	test_fail
-
-XFAIL_TESTS = \
-	test_fail
+	test-value-scalar \
+	test-value-array \
+	test-value-object

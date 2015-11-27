@@ -3,6 +3,6 @@ DIST_SUBDIRS = src test
 
 EXTRA_DIST = \
 	README.md \
-	LICENSE \
+	CHANGELOG.md \
 	VERSION \
 	autogen.sh

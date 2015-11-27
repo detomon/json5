@@ -21,23 +21,38 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef _JSON5_H_
-#define _JSON5_H_
+#ifndef _JSON5_WRITER_H_
+#define _JSON5_WRITER_H_
 
-#ifdef __cplusplus
-	extern "C" {
-#endif
-
-#include "json5-tokenizer.h"
+#include <stdint.h>
+#include <sys/types.h>
 #include "json5-value.h"
-#include "json5-writer.h"
 
-extern int json5_encode (json5_value * value, char const ** out_string, size_t * out_size);
+typedef struct json5_writer json5_writer;
+typedef int (* json5_writer_callback) (uint8_t const * string, size_t size, void * user_info);
 
-extern int json5_decode (char const * string, size_t size, json5_value * out_value);
+struct json5_writer
+{
+	size_t buffer_len;
+	size_t buffer_cap;
+	uint8_t * buffer;
+	json5_writer_callback callback;
+	void * user_info;
+};
 
-#ifdef __cplusplus
-	}
-#endif
+/**
+ * Initialize writer
+ */
+extern int json5_writer_init (json5_writer * writer, json5_writer_callback callback, void * user_info);
 
-#endif /* ! _JSON5_H_ */
+/**
+ * Destroy writer
+ */
+extern void json5_writer_destroy (json5_writer * writer);
+
+/**
+ * Write value and clear previous buffer
+ */
+extern int json5_writer_write (json5_writer * writer, json5_value const * value);
+
+#endif /* ! _JSON5_WRITER_H_ */

@@ -15,17 +15,19 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_CHECK_LIB([unicodetable])
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h])
+AC_CHECK_HEADERS([float.h stdint.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 AC_TYPE_SIZE_T
+AC_TYPE_UINT8_T
 AC_TYPE_INT64_T
+AC_TYPE_UINT64_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memmove memset])
+AC_CHECK_FUNCS([memmove memset strndup])
 
 AC_CONFIG_FILES([
 	Makefile

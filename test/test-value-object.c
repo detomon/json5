@@ -29,7 +29,7 @@ int main (int argc, char const * argv [])
 	assert (item2 -> type == JSON5_TYPE_NULL);
 	assert (value.val.obj.len == 2);
 
-	json5_value_set_string (item2, "astring", 9);
+	json5_value_set_string (item2, "astring", 7);
 	assert (item2 -> type == JSON5_TYPE_STRING);
 
 	item = json5_value_get_prop (&value, "akey34", 6);

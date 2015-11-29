@@ -472,6 +472,8 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 		c = json5_tokenizer_pop_char (&char_state);
 		state = tknzr -> state;
 
+		info = UTLookupRune (c);
+
 		if (c < 0) {
 			c = EOF;
 			char_type = JSON5_TOK_END;
@@ -481,7 +483,6 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 		}
 		else {
 			char_type = JSON5_TOK_OTHER;
-			info = UTLookupRune (c);
 
 			if (info -> flags & UTFlagLetter) {
 				char_type = JSON5_TOK_NAME;

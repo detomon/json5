@@ -608,7 +608,8 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 			}
 			case JSON5_STATE_NAME: {
 				switch (char_type) {
-					case JSON5_TOK_NAME: {
+					case JSON5_TOK_NAME:
+					case JSON5_TOK_NUMBER: {
 						break;
 					}
 					default: {
@@ -686,16 +687,16 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 					}
 					else {
 						json5_tokenizer_utf8_encode (char_string, c);
-						json5_tokenizer_set_error (tknzr, "Invalid hex char '%s' on line %lld offset %lld",
-							char_string, tknzr -> offset.lineno, tknzr -> offset.colno);
+						json5_tokenizer_set_error (tknzr, "Invalid hex char '%s' (\\u%04x) on line %lld offset %lld",
+							char_string, c, tknzr -> offset.lineno, tknzr -> offset.colno);
 
 						goto error;
 					}
 				}
 				else {
 					json5_tokenizer_utf8_encode (char_string, c);
-					json5_tokenizer_set_error (tknzr, "Invalid sequence; unexpected char '%s' on line %lld offset %lld",
-						char_string, tknzr -> offset.lineno, tknzr -> offset.colno);
+					json5_tokenizer_set_error (tknzr, "Invalid sequence; unexpected char '%s' (\\u%04x) on line %lld offset %lld",
+						char_string, c, tknzr -> offset.lineno, tknzr -> offset.colno);
 
 					goto error;
 				}
@@ -835,12 +836,12 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 				break;
 			}
 			case JSON5_STATE_NUMBER: {
-				json5_tokenizer_number_add_digit (tknzr, info -> number.i);
+				json5_tokenizer_number_add_digit (tknzr, (int) info -> number.i);
 				json5_tokenizer_put_char (tknzr, c);
 				break;
 			}
 			case JSON5_STATE_NUMBER_EXP: {
-				json5_tokenizer_exp_add_digit (tknzr, info -> number.i);
+				json5_tokenizer_exp_add_digit (tknzr, (int) info -> number.i);
 				json5_tokenizer_put_char (tknzr, c);
 				break;
 			}
@@ -899,8 +900,8 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 
 	unexpected_char: {
 		json5_tokenizer_utf8_encode (char_string, c);
-		json5_tokenizer_set_error (tknzr, "Unexpected char '%s' on line %lld offset %lld",
-			char_string, tknzr -> offset.lineno, tknzr -> offset.colno);
+		json5_tokenizer_set_error (tknzr, "Unexpected char '%s' (\\u%04x) on line %lld offset %lld",
+			char_string, c, tknzr -> offset.lineno, tknzr -> offset.colno);
 
 		goto error;
 	}

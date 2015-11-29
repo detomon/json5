@@ -31,15 +31,13 @@
 
 static void json5_value_delete (json5_value * value, json5_type type);
 
-static void json5_value_delete_string (json5_value * value)
-{
+static void json5_value_delete_string (json5_value * value) {
 	if (value -> val.str.s) {
 		free (value -> val.str.s);
 	}
 }
 
-static void json5_value_delete_array (json5_value * value)
-{
+static void json5_value_delete_array (json5_value * value) {
 	for (size_t i = 0; i < value -> val.arr.len; i ++) {
 		json5_value_delete (&value -> val.arr.itms [i], JSON5_TYPE_NULL);
 	}
@@ -49,8 +47,7 @@ static void json5_value_delete_array (json5_value * value)
 	}
 }
 
-static void json5_value_delete_object (json5_value * value)
-{
+static void json5_value_delete_object (json5_value * value) {
 	json5_obj_prop * prop;
 
 	for (size_t i = 0; i < value -> val.obj.cap; i ++) {
@@ -66,8 +63,7 @@ static void json5_value_delete_object (json5_value * value)
 	}
 }
 
-static void json5_value_delete (json5_value * value, json5_type type)
-{
+static void json5_value_delete (json5_value * value, json5_type type) {
 	if (value -> type == type) {
 		return;
 	}
@@ -97,50 +93,42 @@ static void json5_value_delete (json5_value * value, json5_type type)
 	value -> type = type;
 }
 
-void json5_value_init (json5_value * value)
-{
+void json5_value_init (json5_value * value) {
 	memset (value, 0, sizeof (*value));
 }
 
-void json5_value_set_int (json5_value * value, int64_t i)
-{
+void json5_value_set_int (json5_value * value, int64_t i) {
 	json5_value_delete (value, JSON5_TYPE_NUMBER);
 	value -> subtype = JSON5_SUBTYPE_INT;
 	value -> val.num.i = i;
 }
 
-void json5_value_set_float (json5_value * value, double f)
-{
+void json5_value_set_float (json5_value * value, double f) {
 	json5_value_delete (value, JSON5_TYPE_NUMBER);
 	value -> subtype = JSON5_SUBTYPE_FLOAT;
 	value -> val.num.f = f;
 }
 
-void json5_value_set_bool (json5_value * value, int b)
-{
+void json5_value_set_bool (json5_value * value, int b) {
 	json5_value_delete (value, JSON5_TYPE_NUMBER);
 	value -> subtype = JSON5_SUBTYPE_BOOL;
 	value -> val.num.i = b != 0;
 }
 
-void json5_value_set_nan (json5_value * value)
-{
+void json5_value_set_nan (json5_value * value) {
 	json5_value_delete (value, JSON5_TYPE_NAN);
 }
 
-void json5_value_set_infinity (json5_value * value, int sign)
-{
+void json5_value_set_infinity (json5_value * value, int sign) {
 	json5_value_delete (value, JSON5_TYPE_INFINITY);
 	value -> val.num.i = sign >= 0 ? 1 : -1;
 }
 
-void json5_value_set_null (json5_value * value)
-{
+void json5_value_set_null (json5_value * value) {
 	json5_value_delete (value, JSON5_TYPE_NULL);
 }
 
-int json5_value_set_string (json5_value * value, char const * str, size_t len)
-{
+int json5_value_set_string (json5_value * value, char const * str, size_t len) {
 	char * new_str = strndup (str, len);
 
 	if (!new_str) {
@@ -154,18 +142,15 @@ int json5_value_set_string (json5_value * value, char const * str, size_t len)
 	return 0;
 }
 
-void json5_value_set_array (json5_value * value)
-{
+void json5_value_set_array (json5_value * value) {
 	json5_value_delete (value, JSON5_TYPE_ARRAY);
 }
 
-void json5_value_set_object (json5_value * value)
-{
+void json5_value_set_object (json5_value * value) {
 	json5_value_delete (value, JSON5_TYPE_OBJECT);
 }
 
-json5_value * json5_value_get_item (json5_value * value, size_t idx)
-{
+json5_value * json5_value_get_item (json5_value * value, size_t idx) {
 	if (value -> type != JSON5_TYPE_ARRAY) {
 		return NULL;
 	}
@@ -177,8 +162,7 @@ json5_value * json5_value_get_item (json5_value * value, size_t idx)
 	return &value -> val.arr.itms [idx];
 }
 
-json5_value * json5_value_append_item (json5_value * value)
-{
+json5_value * json5_value_append_item (json5_value * value) {
 	json5_value * item;
 	json5_value * new_items;
 	size_t new_cap;
@@ -205,8 +189,7 @@ json5_value * json5_value_append_item (json5_value * value)
 	return item;
 }
 
-static json5_hash json5_get_hash (char const * key, size_t key_len)
-{
+static json5_hash json5_get_hash (char const * key, size_t key_len) {
 	json5_hash hash = 0;
 
 	for (size_t i = 0; i < key_len; i ++) {
@@ -216,8 +199,7 @@ static json5_hash json5_get_hash (char const * key, size_t key_len)
 	return hash;
 }
 
-static json5_obj_prop * json5_prop_lookup (json5_obj_prop * props, size_t mask, json5_hash hash, char const * key, size_t key_len)
-{
+static json5_obj_prop * json5_prop_lookup (json5_obj_prop * props, size_t mask, json5_hash hash, char const * key, size_t key_len) {
 	json5_hash i = hash, perturb = hash;
 	json5_obj_prop * prop = & props [i & mask];
 
@@ -235,8 +217,7 @@ static json5_obj_prop * json5_prop_lookup (json5_obj_prop * props, size_t mask, 
 	return prop;
 }
 
-json5_value * json5_value_get_prop (json5_value * value, char const * key, size_t key_len)
-{
+json5_value * json5_value_get_prop (json5_value * value, char const * key, size_t key_len) {
 	json5_hash hash;
 	json5_obj_prop * prop;
 
@@ -258,8 +239,7 @@ json5_value * json5_value_get_prop (json5_value * value, char const * key, size_
 	return NULL;
 }
 
-static int json5_object_grow (json5_value * value)
-{
+static int json5_object_grow (json5_value * value) {
 	size_t new_cap = value -> val.obj.cap * 2;
 	json5_obj_prop * prop, * new_prop, * new_props;
 
@@ -292,8 +272,7 @@ static int json5_object_grow (json5_value * value)
 	return 0;
 }
 
-json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len)
-{
+json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len) {
 	json5_hash hash;
 	json5_obj_prop * prop;
 	char * new_key;
@@ -337,8 +316,7 @@ json5_value * json5_value_set_prop (json5_value * value, char const * key, size_
 	return &prop -> value;
 }
 
-int json5_value_delete_prop (json5_value * value, char const * key, size_t key_len)
-{
+int json5_value_delete_prop (json5_value * value, char const * key, size_t key_len) {
 	json5_hash hash;
 	json5_obj_prop * prop;
 

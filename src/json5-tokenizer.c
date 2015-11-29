@@ -319,8 +319,7 @@ static int json5_tokenizer_ensure_buffer (json5_tokenizer * tknzr) {
 	return 0;
 }
 
-static void json5_tokenizer_end_buffer (json5_tokenizer * tknzr)
-{
+static void json5_tokenizer_end_buffer (json5_tokenizer * tknzr) {
 	// terminate current buffer segment
 	tknzr -> buffer [tknzr -> buffer_len ++] = '\0';
 

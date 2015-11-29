@@ -31,8 +31,7 @@
 typedef struct json5_writer json5_writer;
 typedef int (* json5_writer_callback) (uint8_t const * string, size_t size, void * user_info);
 
-struct json5_writer
-{
+struct json5_writer {
 	size_t buffer_len;
 	size_t buffer_cap;
 	uint8_t * buffer;

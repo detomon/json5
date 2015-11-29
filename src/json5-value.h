@@ -56,6 +56,9 @@ enum json5_subtype {
 	JSON5_SUBTYPE_BOOL,
 };
 
+/**
+ * Defined value container
+ */
 struct json5_value {
 	json5_type type;
 	json5_subtype subtype;
@@ -92,47 +95,59 @@ struct json5_obj_prop {
 };
 
 /**
- * Intialize empty value
+ * Intialize value container
  */
 extern void json5_value_init (json5_value * value);
 
 /**
  * Set integer value
+ *
+ * Replaces current value content
  */
 extern void json5_value_set_int (json5_value * value, int64_t i);
 
 /**
  * Set float value
+ *
+ * Replaces current value content
  */
 extern void json5_value_set_float (json5_value * value, double f);
 
 /**
  * Set boolean value
+ *
+ * Value is considered `false` if `b` is 0 otherwise `true`
+ * Replaces current value content
  */
 extern void json5_value_set_bool (json5_value * value, int b);
 
 /**
  * Set to NaN (Not a Number)
+ *
+ * Replaces current value content
  */
 extern void json5_value_set_nan (json5_value * value);
 
 /**
- * Set value to Infinity
+ * Set value to `Infinity`
  *
- * If sign is 0 the, the value is positive infinite (+Infinity) else negative
+ * If sign is 0, the value is positive infinite (+Infinity) else negative
  * infinite (-Infinity)
+ * Replaces current value content
  */
 extern void json5_value_set_infinity (json5_value * value, int sign);
 
 /**
- * Set value to null
+ * Set value to `null`
+ *
+ * Replaces current value content
  */
 extern void json5_value_set_null (json5_value * value);
 
 /**
  * Set string value
  *
- * Subsequent calls replace the current string
+ * Replaces current value content
  */
 extern int json5_value_set_string (json5_value * value, char const * str, size_t len);
 
@@ -140,51 +155,60 @@ extern int json5_value_set_string (json5_value * value, char const * str, size_t
  * Set to empty array
  *
  * If the value is already an array, nothing is done
+ * Replaces current value content
  */
 extern void json5_value_set_array (json5_value * value);
 
 /**
  * Set to empty object
  *
- * If the value is already an array, nothing is done
+ * If the value is already an object, nothing is done
+ * Replaces current value content
  */
 extern void json5_value_set_object (json5_value * value);
 
 /**
- * Get value at specified index
+ * Get reference for value at specified array index
  *
  * If index does not exists or value is not an array, NULL is returned
+ * Replaces current value content
  */
 extern json5_value * json5_value_get_item (json5_value * value, size_t idx);
 
 /**
- * Append empty value at end of array
+ * Append value at end of array
  *
+ * Initializes appended value with `null`
  * If value is not an array, NULL is returned
- * Returns the appended value
+ * Returns reference to the appended value
+ * Replaces current value content
  */
 extern json5_value * json5_value_append_item (json5_value * value);
 
 /**
- * Get property of object
+ * Get reference to property of object
  *
- * If no property with given key is found or value is not an object, NULL is
+ * If no property with given key is found or `value` is not an object, NULL is
  * returned
+ * Replaces current value content
  */
 extern json5_value * json5_value_get_prop (json5_value * value, char const * key, size_t key_len);
 
 /**
- * Set or replace empty property with key
+ * Set or replace property with key
  *
- * If value is not an object, NULL is returned
- * Returns the inserted property
+ * Initializes the value with `null`
+ * If `value` is not an object, NULL is returned
+ * Replaces current value content
+ * Returns reference to inserted property
  */
 extern json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len);
 
 /**
  * Delete property with key
  *
- * Returns 0 if no property with given key is found or value is not an object
+ * Replaces current value content
+ * Returns 0 if no property with given key is found or `value` is not an object
  */
 extern int json5_value_delete_prop (json5_value * value, char const * key, size_t key_len);
 

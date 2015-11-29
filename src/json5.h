@@ -32,8 +32,14 @@
 #include "json5-value.h"
 #include "json5-writer.h"
 
+/**
+ *
+ */
 extern int json5_encode (json5_value * value, char const ** out_string, size_t * out_size);
 
+/**
+ *
+ */
 extern int json5_decode (char const * string, size_t size, json5_value * out_value);
 
 #ifdef __cplusplus

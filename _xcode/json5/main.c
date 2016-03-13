@@ -4,7 +4,7 @@
 #include "json5-value.h"
 #include "json5-writer.h"
 
-/*static void print_value(json5_value* value, int indent) {
+/*static void print_value (json5_value * value, int indent) {
 	char ind [10];
 
 	for (int i = 0; i < indent; i ++) {
@@ -50,13 +50,13 @@
 			break;
 		}
 		case JSON5_TYPE_OBJECT: {
-			1* prop;
+			1 * prop;
 
 			printf ("{\n");
 			for (int i = 0; i < value -> obj.cap; i ++) {
 				prop = &value -> obj.itms [i];
 
-				if (prop -> key && prop -> key != ((void*) -1)) {
+				if (prop -> key && prop -> key != ((void *) -1)) {
 					printf ("%s\t", ind);
 					printf ("\"%s\": ", prop -> key);
 					print_value (&value -> obj.itms [i].value, indent + 1);
@@ -76,16 +76,16 @@
 	}
 }*/
 
-static int write_json (uint8_t const* string, size_t size, void* info) {
+static int write_json (uint8_t const * string, size_t size, void * info) {
 	fwrite (string, 1, size, stdout);
 
 	return 0;
 }
 
-int main (int argc, const char* argv []) {
+int main (int argc, const char * argv []) {
 	/*json5_value arr;
 	json5_value obj;
-	json5_value* item, * item2;
+	json5_value * item, * item2;
 
 	json5_value_init (&arr);
 	json5_value_init (&obj);
@@ -131,7 +131,7 @@ int main (int argc, const char* argv []) {
 	print_value (&obj, 0);*/
 
 	json5_value value;
-	json5_value* item, * item2;
+	json5_value * item, * item2;
 
 	json5_value_set_object (&value);
 	assert (value.type == JSON5_TYPE_OBJECT);
@@ -141,7 +141,7 @@ int main (int argc, const char* argv []) {
 	assert (item != NULL);
 
 	json5_value_set_float (item, -34.3);
-	assert (item -> type == JSON5_TYPE_NUMBER && item -> subtype == JSON5_SUBTYPE_FLOAT);
+	assert ((item -> type & JSON5_TYPE_MASK) == JSON5_TYPE_NUMBER && (item -> type & JSON5_SUBTYPE_MASK) == JSON5_TYPE_FLOAT);
 
 	item2 = json5_value_set_prop (&value, "akey34", 6);
 	assert (item2 != NULL);
@@ -168,10 +168,10 @@ int main (int argc, const char* argv []) {
 	assert (item != NULL);
 	assert (item -> type == JSON5_TYPE_STRING);
 
-	/*assert(json5_value_delete_prop (&value, "akey34", 6) == 1);
+	/*assert (json5_value_delete_prop (&value, "akey34", 6) == 1);
 	assert (value.val.obj.len == 1);
 
-	assert(json5_value_delete_prop (&value, "somkey44", 8) == 1);
+	assert (json5_value_delete_prop (&value, "somkey44", 8) == 1);
 	assert (value.val.obj.len == 0);*/
 
 

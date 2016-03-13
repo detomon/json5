@@ -33,9 +33,9 @@
 #include <sys/types.h>
 
 /**
- * Defines token types returned by the tokenizer
+ * Defines token types returned by the tokenizer.
  *
- * Some of these token types are only used internally
+ * Some of these token types are only used internally.
  */
 typedef enum {
 	// external
@@ -61,7 +61,7 @@ typedef enum {
 } json5_tok_type;
 
 /**
- * Defines token specific sub-types
+ * Defines token specific sub-types.
  */
 typedef enum {
 	// external
@@ -75,7 +75,7 @@ typedef enum {
 } json5_tok_sub_type;
 
 /**
- * Defines a token's offset inside the JSON string
+ * Defines a token's offset inside the JSON string.
  *
  * As the JSON string is expected to be UTF-8 encoded,
  * the offset is given in characters, not bytes.
@@ -86,12 +86,12 @@ typedef struct {
 } json5_off;
 
 /**
- * Defines a token returned by the tokenizer
+ * Defines a token returned by the tokenizer.
  */
 typedef struct {
 	json5_tok_type type;
 	json5_tok_sub_type subtype;
-	uint8_t* token;
+	uint8_t * token;
 	size_t length;
 	json5_off offset;
 	union {
@@ -101,7 +101,7 @@ typedef struct {
 } json5_token;
 
 /**
- * Used for decoding UTF-8 byte string
+ * Used for decoding UTF-8 byte string.
  */
 typedef struct {
 	size_t length;
@@ -110,9 +110,9 @@ typedef struct {
 } json5_utf8_decoder;
 
 /**
- * Defines the tokenizer object
+ * Defines the tokenizer object.
  *
- * It parses the tokens but does not validate the syntax.
+ * It is used to parses the tokens but does not validate the syntax.
  * The tokens are forwarded to `json5_parser` which validates the syntax and
  * builds the syntax tree.
  */
@@ -137,7 +137,7 @@ typedef struct {
 	} number;
 	size_t buffer_len;
 	size_t buffer_cap;
-	uint8_t* buffer;
+	uint8_t * buffer;
 	json5_off offset;
 	json5_off token_start;
 	json5_utf8_decoder decoder;
@@ -145,46 +145,49 @@ typedef struct {
 } json5_tokenizer;
 
 /**
- * Initialize a tokenizer
- *
- * Returns 0 on success or -1 if an error occurred
+ * A callback function definition used to receive parsed tokens by the tokenizer.
  */
-extern int json5_tokenizer_init(json5_tokenizer* tknzr);
+typedef int (*json5_put_tokens_func) (json5_token const * tokens, size_t count, void * arg);
 
 /**
- * Reset a tokenizer
+ * Initialize a tokenizer.
+ *
+ * Returns 0 on success or -1 if an error occurred.
+ */
+extern int json5_tokenizer_init (json5_tokenizer * tknzr);
+
+/**
+ * Reset a tokenizer.
  *
  * It then can be used to tokenize a new JSON string. The allocated memory will
  * be preserved.
  *
- * Returns 0 on success or -1 if an error occurred
+ * Returns 0 on success or -1 if an error occurred.
  */
-extern void json5_tokenizer_reset(json5_tokenizer* tknzr);
+extern void json5_tokenizer_reset (json5_tokenizer * tknzr);
 
 /**
- * Destroy a tokenizer
+ * Destroy a tokenizer.
  */
-extern void json5_tokenizer_destroy(json5_tokenizer* tknzr);
+extern void json5_tokenizer_destroy (json5_tokenizer * tknzr);
 
 /**
- * Push single byte to the tokenizer
+ * Push single byte to the tokenizer.
  *
- * The string the byte is coming from is expected to be UTF-8 encoded
+ * The string the byte is coming from is expected to be UTF-8 encoded.
  *
- * Returns 0 on success or -1 if an error occurred
+ * Returns 0 on success or -1 if an error occurred.
  */
-extern int json5_tokenizer_put_byte(json5_tokenizer* tknzr, int c);
+//extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c);
 
 /**
- * Push Unicode character to the tokenizer
+ * Push Unicode characters to the tokenizer.
  *
- * If the character is not in the valid Unicode range, an error is returned
- *
- * Returns 0 on success or -1 if an error occurred
+ * Returns 0 on success or -1 if an error occurred.
  */
-extern int json5_tokenizer_put_char(json5_tokenizer* tknzr, int c);
+extern int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, size_t size, json5_put_tokens_func put_tokens, void * arg);
 
 /**
- * Returns the last error message or NULL if no error is present
+ * Returns the last error message or NULL if no error is present.
  */
-extern char const* json5_tokenizer_get_error(json5_tokenizer const* tknzr);
+extern char const * json5_tokenizer_get_error (json5_tokenizer const * tknzr);

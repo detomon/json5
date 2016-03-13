@@ -36,14 +36,18 @@ extern "C" {
 #include "json5-writer.h"
 
 /**
+ * Decode a JSON5 string and output value to `out_value`.
  *
+ * The value has to be freed with `json5_value_set_null` if not used anymore.
  */
-extern int json5_encode(json5_value* value, char const** out_string, size_t* out_size);
+extern int json5_decode (char const * string, size_t size, json5_value * out_value);
 
 /**
+ * Encode a `json5_value` into a string.
  *
+ * The string can has to be freed with `free` if not used anymore.
  */
-extern int json5_decode(char const* string, size_t size, json5_value* out_value);
+extern int json5_encode (json5_value * value, char const ** out_string, size_t * out_size);
 
 #ifdef __cplusplus
 }

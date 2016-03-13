@@ -8,15 +8,15 @@ int main (int argc, char const * argv [])
 	json5_value_init (&value);
 
 	json5_value_set_int (&value, 34);
-	assert (value.type == JSON5_TYPE_NUMBER && value.subtype == JSON5_SUBTYPE_INT);
+	assert (value.type == JSON5_TYPE_INT);
 	assert (value.num.i == 34);
 
 	json5_value_set_float (&value, -12.5);
-	assert (value.type == JSON5_TYPE_NUMBER && value.subtype == JSON5_SUBTYPE_FLOAT);
+	assert (value.type == JSON5_TYPE_FLOAT);
 	assert (value.num.f == -12.5);
 
 	json5_value_set_bool (&value, 5);
-	assert (value.type == JSON5_TYPE_NUMBER && value.subtype == JSON5_SUBTYPE_BOOL);
+	assert (value.type == JSON5_TYPE_BOOL);
 	assert (value.num.i == 1);
 
 	json5_value_set_bool (&value, 0);

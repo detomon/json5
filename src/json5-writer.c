@@ -27,11 +27,11 @@
 #include "json5-writer.h"
 
 #define BUFFER_CAP 4096
-#define PLACEHOLDER_KEY ((char*) 1)
+#define PLACEHOLDER_KEY ((char *) 1)
 
-static int json5_writer_write_value(json5_writer* writer, json5_value const* value);
+static int json5_writer_write_value (json5_writer * writer, json5_value const * value);
 
-int json5_writer_init(json5_writer* writer, json5_writer_callback callback, void* user_info) {
+int json5_writer_init (json5_writer * writer, json5_writer_func write, void * user_info) {
 	memset (writer, 0, sizeof (*writer));
 
 	writer -> buffer_cap = BUFFER_CAP;
@@ -42,13 +42,13 @@ int json5_writer_init(json5_writer* writer, json5_writer_callback callback, void
 		return -1;
 	}
 
-	writer -> callback = callback;
+	writer -> write = write;
 	writer -> user_info = user_info;
 
 	return 0;
 }
 
-void json5_writer_destroy(json5_writer* writer) {
+void json5_writer_destroy (json5_writer * writer) {
 	if (writer -> buffer) {
 		free (writer -> buffer);
 	}
@@ -56,16 +56,16 @@ void json5_writer_destroy(json5_writer* writer) {
 	memset (writer, 0, sizeof (*writer));
 }
 
-static int json5_writer_flush_buffer(json5_writer* writer) {
+static int json5_writer_flush_buffer (json5_writer * writer) {
 	int res;
 
-	res = writer -> callback (writer -> buffer, writer -> buffer_len, writer -> user_info);
+	res = writer -> write (writer -> buffer, writer -> buffer_len, writer -> user_info);
 	writer -> buffer_len = 0;
 
 	return res;
 }
 
-static int json5_writer_write_byte(json5_writer* writer, int c) {
+static int json5_writer_write_byte (json5_writer * writer, int c) {
 	int res;
 
 	if (writer -> buffer_len >= writer -> buffer_cap) {
@@ -81,7 +81,7 @@ static int json5_writer_write_byte(json5_writer* writer, int c) {
 	return 0;
 }
 
-static int json5_writer_write_bytes(json5_writer* writer, uint8_t const* string, size_t size) {
+static int json5_writer_write_bytes (json5_writer * writer, uint8_t const * string, size_t size) {
 	int res;
 	size_t free_size;
 	size_t write_size;
@@ -107,43 +107,43 @@ static int json5_writer_write_bytes(json5_writer* writer, uint8_t const* string,
 	return 0;
 }
 
-static int json5_writer_write_number(json5_writer* writer, json5_value const* value) {
+static int json5_writer_write_number (json5_writer * writer, json5_value const * value) {
 	uint8_t number [64];
 
-	switch (value -> subtype) {
+	switch (value -> type & JSON5_SUBTYPE_MASK) {
 		default:
-		case JSON5_SUBTYPE_INT: {
-			snprintf ((void*) number, sizeof (number), "%lld", value -> num.i);
+		case JSON5_TYPE_INT: {
+			snprintf ((char *) number, sizeof (number), "%lld", value -> num.i);
 			break;
 		}
-		case JSON5_SUBTYPE_FLOAT: {
-			snprintf ((void*) number, sizeof (number), "%.17g", value -> num.f);
+		case JSON5_TYPE_FLOAT: {
+			snprintf ((char *) number, sizeof (number), "%.17g", value -> num.f);
 			break;
 		}
-		case JSON5_SUBTYPE_BOOL: {
-			strncpy ((void*) number, value -> num.i ? "true" : "false", sizeof (number));
+		case JSON5_TYPE_BOOL: {
+			strncpy ((char *) number, value -> num.i ? "true" : "false", sizeof (number));
 			break;
 		}
 	}
 
-	return json5_writer_write_bytes (writer, number, strlen ((void*) number));
+	return json5_writer_write_bytes (writer, number, strlen ((void *) number));
 }
 
-static int json5_writer_write_infinity(json5_writer* writer, json5_value const* value) {
-	char const* string = value -> num.i > 0 ? "Infinity" : "-Infinity";
+static int json5_writer_write_infinity (json5_writer * writer, json5_value const * value) {
+	uint8_t const * string = (uint8_t const *) (value -> num.i > 0 ? "Infinity" : "-Infinity");
 
-	return json5_writer_write_bytes (writer, (void const*) string, strlen ((void const*) string));
+	return json5_writer_write_bytes (writer, (uint8_t const *) string, strlen ((void const *) string));
 }
 
-static int json5_writer_write_nan(json5_writer* writer, json5_value const* value) {
-	return json5_writer_write_bytes (writer, (void const*) "NaN", 3);
+static int json5_writer_write_nan (json5_writer * writer, json5_value const * value) {
+	return json5_writer_write_bytes (writer, (uint8_t const *) "NaN", 3);
 }
 
-static int json5_writer_write_null(json5_writer* writer, json5_value const* value) {
-	return json5_writer_write_bytes (writer, (void const*) "null", 4);
+static int json5_writer_write_null (json5_writer * writer, json5_value const * value) {
+	return json5_writer_write_bytes (writer, (uint8_t const *) "null", 4);
 }
 
-static int json5_writer_write_string(json5_writer* writer, json5_value const* value) {
+static int json5_writer_write_string (json5_writer * writer, json5_value const * value) {
 	int res;
 
 	if ((res = json5_writer_write_byte (writer, '"')) != 0) {
@@ -161,9 +161,9 @@ static int json5_writer_write_string(json5_writer* writer, json5_value const* va
 	return 0;
 }
 
-static int json5_writer_write_array(json5_writer* writer, json5_value const* value) {
+static int json5_writer_write_array (json5_writer * writer, json5_value const * value) {
 	int res;
-	json5_value const* item;
+	json5_value const * item;
 
 	if ((res = json5_writer_write_byte (writer, '[')) != 0) {
 		return -1;
@@ -190,10 +190,10 @@ static int json5_writer_write_array(json5_writer* writer, json5_value const* val
 	return 0;
 }
 
-static int json5_writer_write_prop(json5_writer* writer, json5_obj_prop const* prop) {
+static int json5_writer_write_prop (json5_writer * writer, json5_obj_prop const * prop) {
 	int res;
 
-	if ((res = json5_writer_write_bytes (writer, (void const*) prop -> key, prop -> key_len)) != 0) {
+	if ((res = json5_writer_write_bytes (writer, (void const *) prop -> key, prop -> key_len)) != 0) {
 		return -1;
 	}
 
@@ -208,10 +208,10 @@ static int json5_writer_write_prop(json5_writer* writer, json5_obj_prop const* p
 	return 0;
 }
 
-static int json5_writer_write_object(json5_writer* writer, json5_value const* value) {
+static int json5_writer_write_object (json5_writer * writer, json5_value const * value) {
 	int res;
 	size_t cap = value -> obj.len;
-	json5_obj_prop const* item;
+	json5_obj_prop const * item;
 
 	if ((res = json5_writer_write_byte (writer, '{')) != 0) {
 		return -1;
@@ -240,8 +240,8 @@ static int json5_writer_write_object(json5_writer* writer, json5_value const* va
 	return 0;
 }
 
-static int json5_writer_write_value(json5_writer* writer, json5_value const* value) {
-	switch (value -> type) {
+static int json5_writer_write_value (json5_writer * writer, json5_value const * value) {
+	switch (value -> type & JSON5_TYPE_MASK) {
 		case JSON5_TYPE_NULL: {
 			return json5_writer_write_null (writer, value);
 			break;
@@ -271,9 +271,11 @@ static int json5_writer_write_value(json5_writer* writer, json5_value const* val
 			break;
 		}
 	}
+
+	return 0;
 }
 
-int json5_writer_write(json5_writer* writer, json5_value const* value) {
+int json5_writer_write (json5_writer * writer, json5_value const * value) {
 	int res;
 
 	writer -> buffer_len = 0;

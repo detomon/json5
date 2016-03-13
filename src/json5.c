@@ -23,10 +23,10 @@
 
 #include "json5.h"
 
-int json5_encode(json5_value* value, char const** out_string, size_t* out_size) {
+int json5_encode (json5_value * value, char const ** out_string, size_t * out_size) {
 	return 0;
 }
 
-int json5_decode(char const* string, size_t size, json5_value* out_value) {
+int json5_decode (char const * string, size_t size, json5_value * out_value) {
 	return 0;
 }

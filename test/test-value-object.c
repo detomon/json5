@@ -13,7 +13,7 @@ int main (int argc, char const * argv [])
 	assert (item != NULL);
 
 	json5_value_set_float (item, -34.3);
-	assert (item -> type == JSON5_TYPE_NUMBER && item -> subtype == JSON5_SUBTYPE_FLOAT);
+	assert (item -> type == JSON5_TYPE_FLOAT);
 
 	item2 = json5_value_set_prop (&value, "akey34", 6);
 	assert (item2 != NULL);
@@ -22,7 +22,7 @@ int main (int argc, char const * argv [])
 	assert (value.obj.len == 1);
 
 	json5_value_set_int (item, 45457);
-	assert (item -> type == JSON5_TYPE_NUMBER && item -> subtype == JSON5_SUBTYPE_INT);
+	assert (item -> type == JSON5_TYPE_INT);
 
 	item2 = json5_value_set_prop (&value, "somkey44", 8);
 	assert (item2 != item);
@@ -34,7 +34,7 @@ int main (int argc, char const * argv [])
 
 	item = json5_value_get_prop (&value, "akey34", 6);
 	assert (item != NULL);
-	assert (item -> type == JSON5_TYPE_NUMBER && item -> subtype == JSON5_SUBTYPE_INT);
+	assert (item -> type == JSON5_TYPE_INT);
 
 	item = json5_value_get_prop (&value, "somkey44", 8);
 	assert (item != NULL);

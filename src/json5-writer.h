@@ -32,27 +32,34 @@
 #include "json5-value.h"
 
 typedef struct json5_writer json5_writer;
-typedef int (*json5_writer_callback) (uint8_t const* string, size_t size, void* user_info);
 
+/**
+ * A callback function definition used by the writer to output data to the user.
+ */
+typedef int (*json5_writer_func) (uint8_t const * string, size_t size, void * user_info);
+
+/**
+ * The writer object to encode a `json5_value` into a string.
+ */
 struct json5_writer {
 	size_t buffer_len;
 	size_t buffer_cap;
-	uint8_t* buffer;
-	json5_writer_callback callback;
-	void* user_info;
+	uint8_t * buffer;
+	json5_writer_func write;
+	void * user_info;
 };
 
 /**
- * Initialize writer
+ * Initialize writer.
  */
-extern int json5_writer_init(json5_writer* writer, json5_writer_callback callback, void* user_info);
+extern int json5_writer_init (json5_writer * writer, json5_writer_func callback, void * user_info);
 
 /**
- * Destroy writer
+ * Destroy writer.
  */
-extern void json5_writer_destroy(json5_writer* writer);
+extern void json5_writer_destroy (json5_writer * writer);
 
 /**
- * Write value and clear previous buffer
+ * Write value and clear previous buffer.
  */
-extern int json5_writer_write(json5_writer* writer, json5_value const* value);
+extern int json5_writer_write (json5_writer * writer, json5_value const * value);

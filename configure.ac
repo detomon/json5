@@ -3,7 +3,13 @@
 
 AC_PREREQ([2.63])
 AC_INIT([json5], [0.1], [simon@monoxid.net], [json5], [https://github.com/detomon/json5])
+
+AC_CONFIG_SRCDIR([src/json5.c])
+AC_CONFIG_HEADER([config.h])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+
+m4_include([common.m4])
 
 # Checks for programs.
 AC_PROG_CC
@@ -12,7 +18,7 @@ AC_PROG_RANLIB
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 # Checks for libraries.
-AC_CHECK_LIB([unicodetable])
+#AC_CHECK_LIB([unicodetable])
 
 # Checks for header files.
 AC_CHECK_HEADERS([float.h stdint.h])
@@ -29,6 +35,20 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memmove memset strndup])
 
+AM_CFLAGS="$CFLAGS"
+
+# Flags
+AM_CFLAGS="$AM_CFLAGS -Wall \
+	-Wmissing-prototypes -Wmissing-declarations \
+	-Wstrict-prototypes -Wpointer-arith \
+	-Wwrite-strings -Wcast-qual -Wcast-align \
+	-Wbad-function-cast \
+	-Wformat-security \
+	-Wmissing-format-attribute \
+	-Winline"
+
+CHECK_COMPILE_FLAG([-std=c11], [AM_CFLAGS])
+
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
@@ -37,14 +57,6 @@ AC_CONFIG_FILES([
 
 AC_CONFIG_SUBDIRS([unicode-table])
 
-# Flags
-CFLAGS="$CFLAGS -std=c99 \-Wall \
-	-Wmissing-prototypes -Wmissing-declarations \
-	-Wstrict-prototypes -Wpointer-arith \
-	-Wwrite-strings -Wcast-qual -Wcast-align \
-	-Wbad-function-cast \
-	-Wformat-security \
-	-Wmissing-format-attribute \
-	-Winline"
+AC_SUBST([AM_CFLAGS])
 
 AC_OUTPUT

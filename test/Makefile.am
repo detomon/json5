@@ -1,5 +1,5 @@
 AM_CFLAGS = -I$(srcdir)/../src -L$(srcdir)/../src
-LDADD = $(srcdir)/../src/libjson5.a $(srcdir)/../unicode-table/src/libunicodetable.a
+LDADD = $(srcdir)/../src/libjson5.a $(srcdir)/../unicode-table/src/libunicodetable.a -lnana
 
 check_PROGRAMS = \
 	test-value-scalar \

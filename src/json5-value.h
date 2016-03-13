@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 Simon Schoenenberger
+ * Copyright (c) 2016 Simon Schoenenberger
  * https://github.com/detomon/json5
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -21,8 +21,11 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef _JSON5_VALUE_H_
-#define _JSON5_VALUE_H_
+#pragma once
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdint.h>
 #include <sys/types.h>
@@ -47,7 +50,7 @@ enum json5_type {
 };
 
 /**
- * Defined integer types
+ * Defines integer types
  */
 enum json5_subtype {
 	JSON5_SUBTYPE_NONE,
@@ -57,7 +60,7 @@ enum json5_subtype {
 };
 
 /**
- * Defined value container
+ * Define value container
  */
 struct json5_value {
 	json5_type type;
@@ -68,28 +71,28 @@ struct json5_value {
 			double f;
 		} num;
 		struct {
-			uint8_t * s;
+			uint8_t* s;
 			size_t len;
 		} str;
 		struct {
 			size_t len;
 			size_t cap;
-			json5_value * itms;
+			json5_value* itms;
 		} arr;
 		struct {
 			size_t len;
 			size_t cap;
-			json5_obj_prop * itms;
+			json5_obj_prop* itms;
 		} obj;
-	} val;
+	};
 };
 
 /**
- * Defined object property with key and value
+ * Defines object property with key and value
  */
 struct json5_obj_prop {
 	json5_hash hash;
-	char * key;
+	char* key;
 	size_t key_len;
 	json5_value value;
 };
@@ -97,21 +100,21 @@ struct json5_obj_prop {
 /**
  * Intialize value container
  */
-extern void json5_value_init (json5_value * value);
+extern void json5_value_init(json5_value* value);
 
 /**
  * Set integer value
  *
  * Replaces current value content
  */
-extern void json5_value_set_int (json5_value * value, int64_t i);
+extern void json5_value_set_int(json5_value* value, int64_t i);
 
 /**
  * Set float value
  *
  * Replaces current value content
  */
-extern void json5_value_set_float (json5_value * value, double f);
+extern void json5_value_set_float(json5_value* value, double f);
 
 /**
  * Set boolean value
@@ -119,14 +122,14 @@ extern void json5_value_set_float (json5_value * value, double f);
  * Value is considered `false` if `b` is 0 otherwise `true`
  * Replaces current value content
  */
-extern void json5_value_set_bool (json5_value * value, int b);
+extern void json5_value_set_bool(json5_value* value, int b);
 
 /**
  * Set to NaN (Not a Number)
  *
  * Replaces current value content
  */
-extern void json5_value_set_nan (json5_value * value);
+extern void json5_value_set_nan(json5_value* value);
 
 /**
  * Set value to `Infinity`
@@ -135,21 +138,21 @@ extern void json5_value_set_nan (json5_value * value);
  * infinite (-Infinity)
  * Replaces current value content
  */
-extern void json5_value_set_infinity (json5_value * value, int sign);
+extern void json5_value_set_infinity(json5_value* value, int sign);
 
 /**
  * Set value to `null`
  *
  * Replaces current value content
  */
-extern void json5_value_set_null (json5_value * value);
+extern void json5_value_set_null(json5_value* value);
 
 /**
  * Set string value
  *
  * Replaces current value content
  */
-extern int json5_value_set_string (json5_value * value, char const * str, size_t len);
+extern int json5_value_set_string(json5_value* value, char const* str, size_t len);
 
 /**
  * Set to empty array
@@ -157,7 +160,7 @@ extern int json5_value_set_string (json5_value * value, char const * str, size_t
  * If the value is already an array, nothing is done
  * Replaces current value content
  */
-extern void json5_value_set_array (json5_value * value);
+extern void json5_value_set_array(json5_value* value);
 
 /**
  * Set to empty object
@@ -165,7 +168,7 @@ extern void json5_value_set_array (json5_value * value);
  * If the value is already an object, nothing is done
  * Replaces current value content
  */
-extern void json5_value_set_object (json5_value * value);
+extern void json5_value_set_object(json5_value* value);
 
 /**
  * Get reference for value at specified array index
@@ -173,7 +176,7 @@ extern void json5_value_set_object (json5_value * value);
  * If index does not exists or value is not an array, NULL is returned
  * Replaces current value content
  */
-extern json5_value * json5_value_get_item (json5_value * value, size_t idx);
+extern json5_value* json5_value_get_item(json5_value* value, size_t idx);
 
 /**
  * Append value at end of array
@@ -183,7 +186,7 @@ extern json5_value * json5_value_get_item (json5_value * value, size_t idx);
  * Returns reference to the appended value
  * Replaces current value content
  */
-extern json5_value * json5_value_append_item (json5_value * value);
+extern json5_value* json5_value_append_item(json5_value* value);
 
 /**
  * Get reference to property of object
@@ -192,7 +195,7 @@ extern json5_value * json5_value_append_item (json5_value * value);
  * returned
  * Replaces current value content
  */
-extern json5_value * json5_value_get_prop (json5_value * value, char const * key, size_t key_len);
+extern json5_value* json5_value_get_prop(json5_value* value, char const* key, size_t key_len);
 
 /**
  * Set or replace property with key
@@ -202,7 +205,7 @@ extern json5_value * json5_value_get_prop (json5_value * value, char const * key
  * Replaces current value content
  * Returns reference to inserted property
  */
-extern json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len);
+extern json5_value* json5_value_set_prop(json5_value* value, char const* key, size_t key_len);
 
 /**
  * Delete property with key
@@ -210,6 +213,4 @@ extern json5_value * json5_value_set_prop (json5_value * value, char const * key
  * Replaces current value content
  * Returns 0 if no property with given key is found or `value` is not an object
  */
-extern int json5_value_delete_prop (json5_value * value, char const * key, size_t key_len);
-
-#endif /* ! _JSON5_VALUE_H_ */
+extern int json5_value_delete_prop(json5_value* value, char const* key, size_t key_len);

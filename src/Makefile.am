@@ -1,4 +1,4 @@
-AM_CFLAGS = @CFLAGS@ -I$(srcdir)/../unicode-table/src
+AM_CFLAGS = @AM_CFLAGS@ -I$(srcdir)/../unicode-table/src
 
 BUILT_SOURCES = $(srcdir)/../unicode-table/src/unicode-table.c
 

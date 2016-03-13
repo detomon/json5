@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 Simon Schoenenberger
+ * Copyright (c) 2016 Simon Schoenenberger
  * https://github.com/detomon/json5
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -24,20 +24,28 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <float.h>
 #include "json5-tokenizer.h"
 #include "unicode-table.h"
 
+#if HAVE_FLOAT_H
+#include <float.h>
+#else
+#define DBL_MAX_10_EXP 307
+#define DBL_MIN_10_EXP -308
+#endif
+
 #define INIT_BUF_CAP 4096
 #define BUF_MIN_FREE_SPACE 256
+#define HEX_CHAR_FLAG 16
+#define HEX_VAL_MASK (HEX_CHAR_FLAG - 1)
 
 /**
  * Defines number types
  */
 enum {
-	JSON5_NUMBER_INT,
-	JSON5_NUMBER_HEX,
-	JSON5_NUMBER_FLOAT,
+	JSON5_NUM_INT,
+	JSON5_NUM_HEX,
+	JSON5_NUM_FLOAT,
 };
 
 /**
@@ -75,144 +83,111 @@ typedef struct {
 } json5_char_state;
 
 /**
- * Defines initial characters of tokens
+ *
  */
-static json5_tok_type const init_chars [256] = {
-	[' ']  = JSON5_TOK_SPACE,
-	['\t'] = JSON5_TOK_SPACE,
-	['\n'] = JSON5_TOK_LINEBREAK,
-	['\r'] = JSON5_TOK_LINEBREAK,
-	['\f'] = JSON5_TOK_SPACE,
-	['\v'] = JSON5_TOK_SPACE,
-	['"']  = JSON5_TOK_STRING,
-	['\''] = JSON5_TOK_STRING,
-	['{']  = JSON5_TOK_OBJ_OPEN,
-	['}']  = JSON5_TOK_OBJ_CLOSE,
-	['[']  = JSON5_TOK_ARR_OPEN,
-	[']']  = JSON5_TOK_ARR_CLOSE,
-	['.']  = JSON5_TOK_PERIOD,
-	[',']  = JSON5_TOK_COMMA,
-	[':']  = JSON5_TOK_COLON,
-	['+']  = JSON5_TOK_SIGN,
-	['-']  = JSON5_TOK_SIGN,
-	['\\'] = JSON5_TOK_ESCAPE,
-	['/']  = JSON5_TOK_COMMENT,
-	['0']  = JSON5_TOK_NUMBER,
-	['1']  = JSON5_TOK_NUMBER,
-	['2']  = JSON5_TOK_NUMBER,
-	['3']  = JSON5_TOK_NUMBER,
-	['4']  = JSON5_TOK_NUMBER,
-	['5']  = JSON5_TOK_NUMBER,
-	['6']  = JSON5_TOK_NUMBER,
-	['7']  = JSON5_TOK_NUMBER,
-	['8']  = JSON5_TOK_NUMBER,
-	['9']  = JSON5_TOK_NUMBER,
-	['A']  = JSON5_TOK_NAME,
-	['B']  = JSON5_TOK_NAME,
-	['C']  = JSON5_TOK_NAME,
-	['D']  = JSON5_TOK_NAME,
-	['E']  = JSON5_TOK_NAME,
-	['F']  = JSON5_TOK_NAME,
-	['G']  = JSON5_TOK_NAME,
-	['H']  = JSON5_TOK_NAME,
-	['I']  = JSON5_TOK_NAME,
-	['J']  = JSON5_TOK_NAME,
-	['K']  = JSON5_TOK_NAME,
-	['L']  = JSON5_TOK_NAME,
-	['M']  = JSON5_TOK_NAME,
-	['N']  = JSON5_TOK_NAME,
-	['O']  = JSON5_TOK_NAME,
-	['P']  = JSON5_TOK_NAME,
-	['Q']  = JSON5_TOK_NAME,
-	['R']  = JSON5_TOK_NAME,
-	['S']  = JSON5_TOK_NAME,
-	['T']  = JSON5_TOK_NAME,
-	['U']  = JSON5_TOK_NAME,
-	['V']  = JSON5_TOK_NAME,
-	['W']  = JSON5_TOK_NAME,
-	['X']  = JSON5_TOK_NAME,
-	['Y']  = JSON5_TOK_NAME,
-	['Z']  = JSON5_TOK_NAME,
-	['a']  = JSON5_TOK_NAME,
-	['b']  = JSON5_TOK_NAME,
-	['c']  = JSON5_TOK_NAME,
-	['d']  = JSON5_TOK_NAME,
-	['e']  = JSON5_TOK_NAME,
-	['f']  = JSON5_TOK_NAME,
-	['g']  = JSON5_TOK_NAME,
-	['h']  = JSON5_TOK_NAME,
-	['i']  = JSON5_TOK_NAME,
-	['j']  = JSON5_TOK_NAME,
-	['k']  = JSON5_TOK_NAME,
-	['l']  = JSON5_TOK_NAME,
-	['m']  = JSON5_TOK_NAME,
-	['n']  = JSON5_TOK_NAME,
-	['o']  = JSON5_TOK_NAME,
-	['p']  = JSON5_TOK_NAME,
-	['q']  = JSON5_TOK_NAME,
-	['r']  = JSON5_TOK_NAME,
-	['s']  = JSON5_TOK_NAME,
-	['t']  = JSON5_TOK_NAME,
-	['u']  = JSON5_TOK_NAME,
-	['v']  = JSON5_TOK_NAME,
-	['w']  = JSON5_TOK_NAME,
-	['x']  = JSON5_TOK_NAME,
-	['y']  = JSON5_TOK_NAME,
-	['z']  = JSON5_TOK_NAME,
-	['_']  = JSON5_TOK_NAME,
-};
+typedef struct {
+	uint8_t type;
+	uint8_t hex;
+	uint8_t seq;
+} json5_char;
 
 /**
- * Defines hexadecimal chars
+ *
  */
-static unsigned const hex_chars [256] = {
-	['0'] = 16 | 0,
-	['1'] = 16 | 1,
-	['2'] = 16 | 2,
-	['3'] = 16 | 3,
-	['4'] = 16 | 4,
-	['5'] = 16 | 5,
-	['6'] = 16 | 6,
-	['7'] = 16 | 7,
-	['8'] = 16 | 8,
-	['9'] = 16 | 9,
-	['A'] = 16 | 10,
-	['B'] = 16 | 11,
-	['C'] = 16 | 12,
-	['D'] = 16 | 13,
-	['E'] = 16 | 14,
-	['F'] = 16 | 15,
-	['a'] = 16 | 10,
-	['b'] = 16 | 11,
-	['c'] = 16 | 12,
-	['d'] = 16 | 13,
-	['e'] = 16 | 14,
-	['f'] = 16 | 15,
+static json5_char const char_types [256] = {
+	[' ']  = {.type = JSON5_TOK_SPACE    },
+	['\t'] = {.type = JSON5_TOK_SPACE    },
+	['\n'] = {.type = JSON5_TOK_LINEBREAK},
+	['\r'] = {.type = JSON5_TOK_LINEBREAK},
+	['\f'] = {.type = JSON5_TOK_SPACE    },
+	['\v'] = {.type = JSON5_TOK_SPACE    },
+	['"']  = {.type = JSON5_TOK_STRING   },
+	['\''] = {.type = JSON5_TOK_STRING   },
+	['{']  = {.type = JSON5_TOK_OBJ_OPEN },
+	['}']  = {.type = JSON5_TOK_OBJ_CLOSE},
+	['[']  = {.type = JSON5_TOK_ARR_OPEN },
+	[']']  = {.type = JSON5_TOK_ARR_CLOSE},
+	['.']  = {.type = JSON5_TOK_PERIOD   },
+	[',']  = {.type = JSON5_TOK_COMMA    },
+	[':']  = {.type = JSON5_TOK_COLON    },
+	['+']  = {.type = JSON5_TOK_SIGN     },
+	['-']  = {.type = JSON5_TOK_SIGN     },
+	['\\'] = {.type = JSON5_TOK_ESCAPE   },
+	['/']  = {.type = JSON5_TOK_COMMENT  },
+	['0']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 0},
+	['1']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 1},
+	['2']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 2},
+	['3']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 3},
+	['4']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 4},
+	['5']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 5},
+	['6']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 6},
+	['7']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 7},
+	['8']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 8},
+	['9']  = {.type = JSON5_TOK_NUMBER   , .hex = HEX_CHAR_FLAG | 9},
+	['A']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 10},
+	['B']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 11},
+	['C']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 12},
+	['D']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 13},
+	['E']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 14},
+	['F']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 15},
+	['G']  = {.type = JSON5_TOK_NAME     },
+	['H']  = {.type = JSON5_TOK_NAME     },
+	['I']  = {.type = JSON5_TOK_NAME     },
+	['J']  = {.type = JSON5_TOK_NAME     },
+	['K']  = {.type = JSON5_TOK_NAME     },
+	['L']  = {.type = JSON5_TOK_NAME     },
+	['M']  = {.type = JSON5_TOK_NAME     },
+	['N']  = {.type = JSON5_TOK_NAME     },
+	['O']  = {.type = JSON5_TOK_NAME     },
+	['P']  = {.type = JSON5_TOK_NAME     },
+	['Q']  = {.type = JSON5_TOK_NAME     },
+	['R']  = {.type = JSON5_TOK_NAME     },
+	['S']  = {.type = JSON5_TOK_NAME     },
+	['T']  = {.type = JSON5_TOK_NAME     },
+	['U']  = {.type = JSON5_TOK_NAME     },
+	['V']  = {.type = JSON5_TOK_NAME     },
+	['W']  = {.type = JSON5_TOK_NAME     },
+	['X']  = {.type = JSON5_TOK_NAME     },
+	['Y']  = {.type = JSON5_TOK_NAME     },
+	['Z']  = {.type = JSON5_TOK_NAME     },
+	['a']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 10},
+	['b']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 11, .seq = '\b'},
+	['c']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 12},
+	['d']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 13},
+	['e']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 14},
+	['f']  = {.type = JSON5_TOK_NAME     , .hex = HEX_CHAR_FLAG | 15, .seq = '\f'},
+	['g']  = {.type = JSON5_TOK_NAME     },
+	['h']  = {.type = JSON5_TOK_NAME     },
+	['i']  = {.type = JSON5_TOK_NAME     },
+	['j']  = {.type = JSON5_TOK_NAME     },
+	['k']  = {.type = JSON5_TOK_NAME     },
+	['l']  = {.type = JSON5_TOK_NAME     },
+	['m']  = {.type = JSON5_TOK_NAME     },
+	['n']  = {.type = JSON5_TOK_NAME     , .seq = '\n'},
+	['o']  = {.type = JSON5_TOK_NAME     },
+	['p']  = {.type = JSON5_TOK_NAME     },
+	['q']  = {.type = JSON5_TOK_NAME     },
+	['r']  = {.type = JSON5_TOK_NAME     , .seq = '\r'},
+	['s']  = {.type = JSON5_TOK_NAME     },
+	['t']  = {.type = JSON5_TOK_NAME     , .seq = '\t'},
+	['u']  = {.type = JSON5_TOK_NAME     , .seq = 'u'},
+	['v']  = {.type = JSON5_TOK_NAME     , .seq = '\v'},
+	['w']  = {.type = JSON5_TOK_NAME     },
+	['x']  = {.type = JSON5_TOK_NAME     , .seq = 'x'},
+	['y']  = {.type = JSON5_TOK_NAME     },
+	['z']  = {.type = JSON5_TOK_NAME     },
+	['_']  = {.type = JSON5_TOK_NAME     },
 };
 
-/**
- * Defines escape sequences
- */
-static unsigned const escape_chars [256] = {
-	['b'] = '\b',
-	['f'] = '\f',
-	['n'] = '\n',
-	['r'] = '\r',
-	['t'] = '\t',
-	['u'] = 'u',
-	['v'] = '\v',
-	['x'] = 'x',
-};
-
-static int json5_tokenizer_has_char (json5_char_state * state) {
+static int json5_tokenizer_has_char(json5_char_state* state) {
 	return state -> c != EOF;
 }
 
-static void json5_tokenizer_push_char (json5_char_state * state, int c) {
+static void json5_tokenizer_push_char(json5_char_state* state, int c) {
 	state -> c = c;
 }
 
-static int json5_tokenizer_pop_char (json5_char_state * state) {
+static int json5_tokenizer_pop_char(json5_char_state* state) {
 	int c;
 
 	c = state -> c;
@@ -221,12 +196,12 @@ static int json5_tokenizer_pop_char (json5_char_state * state) {
 	return c;
 }
 
-static void json5_tokenizer_push_back (json5_char_state * state, int c) {
+static void json5_tokenizer_push_back(json5_char_state* state, int c) {
 	state -> c = c;
 	state -> offset = state -> prev_offset;
 }
 
-static int json5_utf8_decode (json5_utf8_decoder * decoder, unsigned c, unsigned * value) {
+static int json5_utf8_decode(json5_utf8_decoder* decoder, unsigned c, unsigned* value) {
 	int byte_count = 0;
 
 	if (c > 0x7F && decoder -> count == 0) {
@@ -278,19 +253,19 @@ static int json5_utf8_decode (json5_utf8_decoder * decoder, unsigned c, unsigned
 	return 0;
 }
 
-static void json5_tokenizer_set_error (json5_tokenizer * tknzr, char const * msg, ...) {
+static void json5_tokenizer_set_error(json5_tokenizer* tknzr, char const* msg, ...) {
 	va_list args;
 
 	va_start (args, msg);
-	vsnprintf ((void *) tknzr -> buffer, tknzr -> buffer_cap, msg, args);
+	vsnprintf ((void*) tknzr -> buffer, tknzr -> buffer_cap, msg, args);
 	va_end (args);
 }
 
 /**
  * Relocate data of tokens to new allocated buffer
  */
-static void json5_tokenizer_relocate_token_data (json5_tokenizer * tknzr, unsigned char * new_buf) {
-	json5_token * token;
+static void json5_tokenizer_relocate_token_data(json5_tokenizer* tknzr, uint8_t* new_buf) {
+	json5_token* token;
 
 	for (int i = 0; i < tknzr -> token_count; i ++) {
 		token = &tknzr -> tokens [i];
@@ -298,9 +273,9 @@ static void json5_tokenizer_relocate_token_data (json5_tokenizer * tknzr, unsign
 	}
 }
 
-static int json5_tokenizer_ensure_buffer (json5_tokenizer * tknzr) {
+static int json5_tokenizer_ensure_buffer(json5_tokenizer* tknzr) {
 	size_t new_cap;
-	unsigned char * new_buf;
+	uint8_t* new_buf;
 
 	if (tknzr -> buffer_len + BUF_MIN_FREE_SPACE >= tknzr -> buffer_cap) {
 		new_cap = tknzr -> buffer_cap * 2;
@@ -319,17 +294,17 @@ static int json5_tokenizer_ensure_buffer (json5_tokenizer * tknzr) {
 	return 0;
 }
 
-static void json5_tokenizer_end_buffer (json5_tokenizer * tknzr) {
+static void json5_tokenizer_end_buffer(json5_tokenizer* tknzr) {
 	// terminate current buffer segment
 	tknzr -> buffer [tknzr -> buffer_len ++] = '\0';
 
 	// align next buffer segment to pointer size
-	while (tknzr -> buffer_len & (sizeof (void *) - 1)) {
+	while (tknzr -> buffer_len & (sizeof (void*) - 1)) {
 		tknzr -> buffer [tknzr -> buffer_len ++] = '\0';
 	}
 }
 
-int json5_tokenizer_init (json5_tokenizer * tknzr) {
+int json5_tokenizer_init(json5_tokenizer* tknzr) {
 	memset (tknzr, 0, sizeof (*tknzr));
 
 	tknzr -> buffer_cap = INIT_BUF_CAP;
@@ -342,8 +317,8 @@ int json5_tokenizer_init (json5_tokenizer * tknzr) {
 	return 0;
 }
 
-void json5_tokenizer_reset (json5_tokenizer * tknzr) {
-	unsigned char * buffer = tknzr -> buffer;
+void json5_tokenizer_reset(json5_tokenizer* tknzr) {
+	uint8_t* buffer = tknzr -> buffer;
 	size_t buffer_cap = tknzr -> buffer_cap;
 
 	memset (tknzr, 0, sizeof (*tknzr));
@@ -351,7 +326,7 @@ void json5_tokenizer_reset (json5_tokenizer * tknzr) {
 	tknzr -> buffer_cap = buffer_cap;
 }
 
-void json5_tokenizer_destroy (json5_tokenizer * tknzr) {
+void json5_tokenizer_destroy(json5_tokenizer* tknzr) {
 	if (tknzr -> buffer) {
 		free (tknzr -> buffer);
 	}
@@ -359,7 +334,7 @@ void json5_tokenizer_destroy (json5_tokenizer * tknzr) {
 	memset (tknzr, 0, sizeof (*tknzr));
 }
 
-int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c) {
+int json5_tokenizer_put_byte(json5_tokenizer* tknzr, int c) {
 	unsigned value;
 	int status;
 
@@ -382,73 +357,94 @@ int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c) {
 }
 
 static void json5_tokenizer_utf8_encode (char string [], unsigned c) {
-	string [0] = '\0';
-
-	fprintf (stderr, "Uninplemented json5_tokenizer_utf8_encode\n");
-	abort ();
-}
-
-static void json5_tokenizer_conv_number_float (json5_tokenizer * tknzr) {
-	if (tknzr -> number.type != JSON5_NUMBER_FLOAT) {
-		tknzr -> number.mantissa.f = tknzr -> number.mantissa.i;
-		tknzr -> number.type = JSON5_NUMBER_FLOAT;
+	if (c < 0x80) {
+		string [0] = c;
+		string [1] = '\0';
+	}
+	else if (c < 0x800) {
+		string [0] = 0xC0 | (c >> 6);
+		string [1] = 0x80 | (c & 0x3F);
+		string [2] = '\0';
+	}
+	else if (c < 0x10000) {
+		string [0] = 0xE0 | (c >> 12);
+		string [1] = 0x80 | ((c >> 6) & 0x3F);
+		string [2] = 0x80 | (c & 0x3F);
+		string [3] = '\0';
+	}
+	else if (c <= UT_MAX_VALUE) {
+		string [0] = 0xF0 | (c >> 18);
+		string [1] = 0x80 | ((c >> 12) & 0x3F);
+		string [2] = 0x80 | ((c >> 6) & 0x3F);
+		string [3] = 0x80 | (c & 0x3F);
+		string [4] = '\0';
+	}
+	else { // Invalid rune
+		//c = REPLACEMENT_RUNE;
 	}
 }
 
-static void json5_tokenizer_number_add_digit (json5_tokenizer * tknzr, int value) {
-	if (tknzr -> number.type != JSON5_NUMBER_FLOAT) {
-		if (tknzr -> number.mantissa.i > INT64_MAX / 10) {
+static void json5_tokenizer_conv_number_float(json5_tokenizer* tknzr) {
+	if (tknzr -> number.type != JSON5_NUM_FLOAT) {
+		tknzr -> number.mant.f = tknzr -> number.mant.i;
+		tknzr -> number.type = JSON5_NUM_FLOAT;
+	}
+}
+
+static void json5_tokenizer_number_add_digit(json5_tokenizer* tknzr, int value) {
+	if (tknzr -> number.type != JSON5_NUM_FLOAT) {
+		if (tknzr -> number.mant.i > INT64_MAX / 10) {
 			json5_tokenizer_conv_number_float (tknzr);
 		}
 	}
 
-	if (tknzr -> number.type != JSON5_NUMBER_FLOAT) {
-		tknzr -> number.mantissa.i = 10 * tknzr -> number.mantissa.i + value;
+	if (tknzr -> number.type != JSON5_NUM_FLOAT) {
+		tknzr -> number.mant.i = 10 * tknzr -> number.mant.i + value;
 
-		if (tknzr -> number.mantissa.i > INT64_MAX - value) {
+		if (tknzr -> number.mant.i > INT64_MAX - value) {
 			json5_tokenizer_conv_number_float (tknzr);
-			tknzr -> number.mantissa.f += value;
+			tknzr -> number.mant.f += value;
 		}
 		else {
-			tknzr -> number.mantissa.i += value;
+			tknzr -> number.mant.i += value;
 		}
 	}
 	else {
-		tknzr -> number.mantissa.f = 10.0 * tknzr -> number.mantissa.f + value;
+		tknzr -> number.mant.f = 10.0 * tknzr -> number.mant.f + value;
 	}
 }
 
-static void json5_tokenizer_exp_add_digit (json5_tokenizer * tknzr, int value) {
+static void json5_tokenizer_exp_add_digit(json5_tokenizer* tknzr, int value) {
 	// ignore larger values
 	if (tknzr -> number.exp < DBL_MAX_10_EXP) {
 		tknzr -> number.exp = 10 * tknzr -> number.exp + value;
 	}
 }
 
-static void json5_tokenizer_number_end (json5_tokenizer * tknzr) {
-	if (tknzr -> number.type == JSON5_NUMBER_FLOAT) {
+static void json5_tokenizer_number_end(json5_tokenizer* tknzr) {
+	if (tknzr -> number.type == JSON5_NUM_FLOAT) {
 		// ...
 	}
 
 	// ...
 }
 
-int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
+int json5_tokenizer_put_char(json5_tokenizer* tknzr, int c) {
 	int state;
 	int accept;
 	int accept_count;
 	size_t buffer_len;
 	json5_tok_type char_type;
-	json5_token * token;
+	json5_token* token;
 	json5_char_state char_state;
 	char char_string [8];
-	UTInfo const * info;
+	UTInfo const* info = NULL;
 
 	if (tknzr -> state >= JSON5_STATE_END) {
 		return 0;
 	}
 
-	if (json5_tokenizer_ensure_buffer (tknzr) != 0) {
+	if(json5_tokenizer_ensure_buffer (tknzr) != 0) {
 		goto alloc_error;
 	}
 
@@ -472,17 +468,16 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 		c = json5_tokenizer_pop_char (&char_state);
 		state = tknzr -> state;
 
-		info = UTLookupRune (c);
-
 		if (c < 0) {
 			c = EOF;
 			char_type = JSON5_TOK_END;
 		}
 		else if (c < 256) {
-			char_type = init_chars [c];
+			char_type = char_types [c].type;
 		}
 		else {
 			char_type = JSON5_TOK_OTHER;
+			info = UTLookupRune (c);
 
 			if (info -> flags & UTFlagLetter) {
 				char_type = JSON5_TOK_NAME;
@@ -560,7 +555,7 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 						char_type = JSON5_TOK_NUMBER;
 
 						memset (&tknzr -> number, 0, sizeof (tknzr -> number));
-						tknzr -> number.type = JSON5_NUMBER_FLOAT;
+						tknzr -> number.type = JSON5_NUM_FLOAT;
 						break;
 					}
 					case JSON5_TOK_COMMA: {
@@ -656,8 +651,8 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 						state = JSON5_STATE_STRING;
 
 						if (c < 256) {
-							if (escape_chars [c]) {
-								c = escape_chars [c];
+							if (char_types [c].seq) {
+								c = char_types [c].seq;
 
 								switch (c) {
 									case 'u': {
@@ -682,8 +677,8 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 			}
 			case JSON5_STATE_STRING_HEXCHAR: {
 				if (c < 256) {
-					if (hex_chars [c]) {
-						c = hex_chars [c] & 0xF;
+					if (char_types [c].hex) {
+						c = char_types [c].hex & HEX_VAL_MASK;
 					}
 					else {
 						json5_tokenizer_utf8_encode (char_string, c);
@@ -765,8 +760,8 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 							case 'x':
 							case 'X': {
 								// if number is "0"
-								if (tknzr -> number.length == 1 && tknzr -> number.mantissa.i == 0) {
-									tknzr -> number.type = JSON5_NUMBER_HEX;
+								if (tknzr -> number.length == 1 && tknzr -> number.mant.i == 0) {
+									tknzr -> number.type = JSON5_NUM_HEX;
 									state = JSON5_STATE_NUMBER_HEX_BEGIN;
 								}
 								else {
@@ -836,17 +831,17 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 				break;
 			}
 			case JSON5_STATE_NUMBER: {
-				json5_tokenizer_number_add_digit (tknzr, (int) info -> number.i);
+				json5_tokenizer_number_add_digit (tknzr, c - '0');
 				json5_tokenizer_put_char (tknzr, c);
 				break;
 			}
 			case JSON5_STATE_NUMBER_EXP: {
-				json5_tokenizer_exp_add_digit (tknzr, (int) info -> number.i);
+				json5_tokenizer_exp_add_digit (tknzr, c - '0');
 				json5_tokenizer_put_char (tknzr, c);
 				break;
 			}
 			case JSON5_STATE_NUMBER_HEX: {
-				json5_tokenizer_number_add_digit (tknzr, hex_chars [c] & 0xF);
+				json5_tokenizer_number_add_digit (tknzr, char_types [c].hex & 0xF);
 				json5_tokenizer_put_char (tknzr, c);
 				break;
 			}
@@ -891,7 +886,7 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 
 		tknzr -> state = state;
 	}
-	while (json5_tokenizer_has_char (&char_state));
+	while(json5_tokenizer_has_char (&char_state));
 
 	tknzr -> accept_count = accept_count;
 	tknzr -> offset = char_state.offset;
@@ -925,9 +920,9 @@ int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 	}
 }
 
-char const * json5_tokenizer_get_error (json5_tokenizer const * tknzr) {
+char const* json5_tokenizer_get_error(json5_tokenizer const* tknzr) {
 	if (tknzr -> state == JSON5_STATE_ERROR) {
-		return (void *) tknzr -> buffer;
+		return (void*) tknzr -> buffer;
 	}
 
 	return NULL;

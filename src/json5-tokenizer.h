@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 Simon Schoenenberger
+ * Copyright (c) 2016 Simon Schoenenberger
  * https://github.com/detomon/json5
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -21,8 +21,11 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef _JSON5_TOKENIZER_H_
-#define _JSON5_TOKENIZER_H_
+#pragma once
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #define JSON5_NUM_TOKS 2
 
@@ -88,7 +91,7 @@ typedef struct {
 typedef struct {
 	json5_tok_type type;
 	json5_tok_sub_type subtype;
-	unsigned char * token;
+	uint8_t* token;
 	size_t length;
 	json5_off offset;
 	union {
@@ -130,15 +133,15 @@ typedef struct {
 		union {
 			uint64_t i;
 			double f;
-		} mantissa;
+		} mant;
 	} number;
 	size_t buffer_len;
 	size_t buffer_cap;
-	unsigned char * buffer;
+	uint8_t* buffer;
 	json5_off offset;
 	json5_off token_start;
 	json5_utf8_decoder decoder;
-	json5_token tokens [JSON5_NUM_TOKS];
+	json5_token tokens[JSON5_NUM_TOKS];
 } json5_tokenizer;
 
 /**
@@ -146,7 +149,7 @@ typedef struct {
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_init (json5_tokenizer * tknzr);
+extern int json5_tokenizer_init(json5_tokenizer* tknzr);
 
 /**
  * Reset a tokenizer
@@ -156,12 +159,12 @@ extern int json5_tokenizer_init (json5_tokenizer * tknzr);
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern void json5_tokenizer_reset (json5_tokenizer * tknzr);
+extern void json5_tokenizer_reset(json5_tokenizer* tknzr);
 
 /**
  * Destroy a tokenizer
  */
-extern void json5_tokenizer_destroy (json5_tokenizer * tknzr);
+extern void json5_tokenizer_destroy(json5_tokenizer* tknzr);
 
 /**
  * Push single byte to the tokenizer
@@ -170,7 +173,7 @@ extern void json5_tokenizer_destroy (json5_tokenizer * tknzr);
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c);
+extern int json5_tokenizer_put_byte(json5_tokenizer* tknzr, int c);
 
 /**
  * Push Unicode character to the tokenizer
@@ -179,11 +182,9 @@ extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c);
  *
  * Returns 0 on success or -1 if an error occurred
  */
-extern int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c);
+extern int json5_tokenizer_put_char(json5_tokenizer* tknzr, int c);
 
 /**
  * Returns the last error message or NULL if no error is present
  */
-extern char const * json5_tokenizer_get_error (json5_tokenizer const * tknzr);
-
-#endif /* ! _JSON5_TOKENIZER_H_ */
+extern char const* json5_tokenizer_get_error(json5_tokenizer const* tknzr);

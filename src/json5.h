@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 Simon Schoenenberger
+ * Copyright (c) 2016 Simon Schoenenberger
  * https://github.com/detomon/json5
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -21,11 +21,14 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef _JSON5_H_
-#define _JSON5_H_
+#pragma once
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef __cplusplus
-	extern "C" {
+extern "C" {
 #endif
 
 #include "json5-tokenizer.h"
@@ -35,15 +38,13 @@
 /**
  *
  */
-extern int json5_encode (json5_value * value, char const ** out_string, size_t * out_size);
+extern int json5_encode(json5_value* value, char const** out_string, size_t* out_size);
 
 /**
  *
  */
-extern int json5_decode (char const * string, size_t size, json5_value * out_value);
+extern int json5_decode(char const* string, size_t size, json5_value* out_value);
 
 #ifdef __cplusplus
-	}
+}
 #endif
-
-#endif /* ! _JSON5_H_ */

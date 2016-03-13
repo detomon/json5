@@ -19,7 +19,7 @@ int main (int argc, char const * argv [])
 	assert (item2 != NULL);
 	assert (item2 == item);
 	assert (item2 -> type == JSON5_TYPE_NULL);
-	assert (value.val.obj.len == 1);
+	assert (value.obj.len == 1);
 
 	json5_value_set_int (item, 45457);
 	assert (item -> type == JSON5_TYPE_NUMBER && item -> subtype == JSON5_SUBTYPE_INT);
@@ -27,7 +27,7 @@ int main (int argc, char const * argv [])
 	item2 = json5_value_set_prop (&value, "somkey44", 8);
 	assert (item2 != item);
 	assert (item2 -> type == JSON5_TYPE_NULL);
-	assert (value.val.obj.len == 2);
+	assert (value.obj.len == 2);
 
 	json5_value_set_string (item2, "astring", 7);
 	assert (item2 -> type == JSON5_TYPE_STRING);
@@ -41,10 +41,10 @@ int main (int argc, char const * argv [])
 	assert (item -> type == JSON5_TYPE_STRING);
 
 	assert (json5_value_delete_prop (&value, "akey34", 6) == 1);
-	assert (value.val.obj.len == 1);
+	assert (value.obj.len == 1);
 
 	assert (json5_value_delete_prop (&value, "somkey44", 8) == 1);
-	assert (value.val.obj.len == 0);
+	assert (value.obj.len == 0);
 
 	return RESULT_PASS;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 Simon Schoenenberger
+ * Copyright (c) 2016 Simon Schoenenberger
  * https://github.com/detomon/json5
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -21,37 +21,38 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef _JSON5_WRITER_H_
-#define _JSON5_WRITER_H_
+#pragma once
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdint.h>
 #include <sys/types.h>
 #include "json5-value.h"
 
 typedef struct json5_writer json5_writer;
-typedef int (* json5_writer_callback) (uint8_t const * string, size_t size, void * user_info);
+typedef int (*json5_writer_callback) (uint8_t const* string, size_t size, void* user_info);
 
 struct json5_writer {
 	size_t buffer_len;
 	size_t buffer_cap;
-	uint8_t * buffer;
+	uint8_t* buffer;
 	json5_writer_callback callback;
-	void * user_info;
+	void* user_info;
 };
 
 /**
  * Initialize writer
  */
-extern int json5_writer_init (json5_writer * writer, json5_writer_callback callback, void * user_info);
+extern int json5_writer_init(json5_writer* writer, json5_writer_callback callback, void* user_info);
 
 /**
  * Destroy writer
  */
-extern void json5_writer_destroy (json5_writer * writer);
+extern void json5_writer_destroy(json5_writer* writer);
 
 /**
  * Write value and clear previous buffer
  */
-extern int json5_writer_write (json5_writer * writer, json5_value const * value);
-
-#endif /* ! _JSON5_WRITER_H_ */
+extern int json5_writer_write(json5_writer* writer, json5_value const* value);

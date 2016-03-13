@@ -55,6 +55,10 @@ AC_CONFIG_FILES([
 	test/Makefile
 ])
 
+# Exports to unicode-table
+export UT_SYMBOL_PREFIX="json5_ut"
+export UT_SNAKE_CASE=1
+
 AC_CONFIG_SUBDIRS([unicode-table])
 
 AC_SUBST([AM_CFLAGS])

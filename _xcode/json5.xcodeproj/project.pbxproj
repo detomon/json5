@@ -38,7 +38,6 @@
 		F466AD651C95642400D4D738 /* json5.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = json5.c; sourceTree = "<group>"; };
 		F466AD661C95642400D4D738 /* json5.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = json5.h; sourceTree = "<group>"; };
 		F466AD7B1C95646A00D4D738 /* generate.pl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; path = generate.pl; sourceTree = "<group>"; };
-		F466AD7E1C95646A00D4D738 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		F466AD801C95646A00D4D738 /* SpecialCasing.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SpecialCasing.txt; sourceTree = "<group>"; };
 		F466AD811C95646A00D4D738 /* unicode-table.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "unicode-table.c"; sourceTree = "<group>"; };
 		F466AD821C95646A00D4D738 /* unicode-table.c.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "unicode-table.c.in"; sourceTree = "<group>"; };
@@ -97,7 +96,6 @@
 			isa = PBXGroup;
 			children = (
 				F466AD7B1C95646A00D4D738 /* generate.pl */,
-				F466AD7E1C95646A00D4D738 /* Makefile.am */,
 				F466AD801C95646A00D4D738 /* SpecialCasing.txt */,
 				F466AD811C95646A00D4D738 /* unicode-table.c */,
 				F466AD821C95646A00D4D738 /* unicode-table.c.in */,

@@ -56,6 +56,7 @@ typedef enum {
 	JSON5_TOK_SIGN,
 	JSON5_TOK_PERIOD,
 	JSON5_TOK_SPACE,
+	JSON5_TOK_MBCHAR,
 	// special
 	JSON5_TOK_END,
 } json5_tok_type;
@@ -138,10 +139,11 @@ typedef struct {
 	size_t buffer_len;
 	size_t buffer_cap;
 	uint8_t * buffer;
+	uint8_t * char_start; // used for UTF-8 characters
 	json5_off offset;
 	json5_off token_start;
 	json5_utf8_decoder decoder;
-	json5_token tokens[JSON5_NUM_TOKS];
+	json5_token tokens [JSON5_NUM_TOKS];
 } json5_tokenizer;
 
 /**
@@ -170,15 +172,6 @@ extern void json5_tokenizer_reset (json5_tokenizer * tknzr);
  * Destroy a tokenizer.
  */
 extern void json5_tokenizer_destroy (json5_tokenizer * tknzr);
-
-/**
- * Push single byte to the tokenizer.
- *
- * The string the byte is coming from is expected to be UTF-8 encoded.
- *
- * Returns 0 on success or -1 if an error occurred.
- */
-//extern int json5_tokenizer_put_byte (json5_tokenizer * tknzr, int c);
 
 /**
  * Push Unicode characters to the tokenizer.

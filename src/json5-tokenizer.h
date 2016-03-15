@@ -50,6 +50,7 @@ typedef enum {
 	JSON5_TOK_NUMBER,
 	JSON5_TOK_NAME,
 	JSON5_TOK_COMMENT,
+	JSON5_TOK_COMMENT2,
 	// internal
 	JSON5_TOK_LINEBREAK,
 	JSON5_TOK_ESCAPE,
@@ -102,15 +103,6 @@ typedef struct {
 } json5_token;
 
 /**
- * Used for decoding UTF-8 byte string.
- */
-typedef struct {
-	size_t length;
-	size_t count;
-	unsigned value;
-} json5_utf8_decoder;
-
-/**
  * Defines the tokenizer object.
  *
  * It is used to parses the tokens but does not validate the syntax.
@@ -128,21 +120,27 @@ typedef struct {
 		unsigned sign:1;
 		unsigned exp_sign:1;
 		unsigned type:4;
-		int length;
+		uint16_t length;
+		uint16_t exp_len;
 		int dec_pnt;
 		int exp;
 		union {
-			uint64_t i;
+			uint64_t u;
+			int64_t i;
 			double f;
 		} mant;
 	} number;
 	size_t buffer_len;
 	size_t buffer_cap;
 	uint8_t * buffer;
-	uint8_t * char_start; // used for UTF-8 characters
 	json5_off offset;
 	json5_off token_start;
-	json5_utf8_decoder decoder;
+	struct {
+		uint8_t length;
+		uint8_t count;
+		unsigned value;
+		uint8_t chars [4];
+	} mb_char;
 	json5_token tokens [JSON5_NUM_TOKS];
 } json5_tokenizer;
 

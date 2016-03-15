@@ -3,6 +3,7 @@
 #include <string.h>
 #include "json5-value.h"
 #include "json5-writer.h"
+#include "json5-tokenizer.h"
 
 /*static void print_value (json5_value * value, int indent) {
 	char ind [10];
@@ -82,6 +83,14 @@ static int write_json (uint8_t const * string, size_t size, void * info) {
 	return 0;
 }
 
+static int put_tokens (json5_token const * tokens, size_t count, void * arg) {
+	for (size_t i = 0; i < count; i ++) {
+		printf (">> '%s' %lld, %lf (%d)\n", tokens [i].token, tokens [i].value.i, tokens [i].value.f, tokens [i].type);
+	}
+
+	return 0;
+}
+
 int main (int argc, const char * argv []) {
 	/*json5_value arr;
 	json5_value obj;
@@ -141,7 +150,7 @@ int main (int argc, const char * argv []) {
 	assert (item != NULL);
 
 	json5_value_set_float (item, -34.3);
-	assert ((item -> type & JSON5_TYPE_MASK) == JSON5_TYPE_NUMBER && (item -> type & JSON5_SUBTYPE_MASK) == JSON5_TYPE_FLOAT);
+	assert (item -> type == JSON5_TYPE_FLOAT);
 
 	item2 = json5_value_set_prop (&value, "akey34", 6);
 	assert (item2 != NULL);
@@ -150,7 +159,7 @@ int main (int argc, const char * argv []) {
 	assert (value.obj.len == 1);
 
 	json5_value_set_float (item, -4e6);
-	//assert (item -> type == JSON5_TYPE_NUMBER && item -> subtype == JSON5_SUBTYPE_INT);
+	//assert (item -> type == JSON5_TYPE_INT);
 
 	item2 = json5_value_set_prop (&value, "somkey44", 8);
 	assert (item2 != item);
@@ -162,7 +171,7 @@ int main (int argc, const char * argv []) {
 
 	item = json5_value_get_prop (&value, "akey34", 6);
 	assert (item != NULL);
-	//assert (item -> type == JSON5_TYPE_NUMBER && item -> subtype == JSON5_SUBTYPE_INT);
+	//assert (item -> type == JSON5_TYPE_INT);
 
 	item = json5_value_get_prop (&value, "somkey44", 8);
 	assert (item != NULL);
@@ -179,6 +188,21 @@ int main (int argc, const char * argv []) {
 	json5_writer_init (&writer, write_json, NULL);
 
 	json5_writer_write (&writer, &value);
+
+	printf ("\n\n");
+
+	json5_tokenizer tknzr;
+
+	json5_tokenizer_init (&tknzr);
+
+	//char const * string = "{'bla':\"key\\x40\",e:1e-2,}";
+	char const * string = "{\"\\nz\"}, [-4.e]";
+	size_t size = strlen (string);
+	json5_tokenizer_put_chars (&tknzr, (uint8_t *) string, size, put_tokens, NULL);
+
+	json5_tokenizer_put_chars (&tknzr, (uint8_t *) "", 0, put_tokens, NULL);
+
+	printf ("\n!! %s\n", tknzr.buffer);
 
 	return 0;
 }

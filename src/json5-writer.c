@@ -110,7 +110,7 @@ static int json5_writer_write_bytes (json5_writer * writer, uint8_t const * stri
 static int json5_writer_write_number (json5_writer * writer, json5_value const * value) {
 	uint8_t number [64];
 
-	switch (value -> type & JSON5_SUBTYPE_MASK) {
+	switch (value -> type) {
 		default:
 		case JSON5_TYPE_INT: {
 			snprintf ((char *) number, sizeof (number), "%lld", value -> num.i);

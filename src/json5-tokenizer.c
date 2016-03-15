@@ -217,52 +217,24 @@ static int json5_tokenizer_ensure_buffer (json5_tokenizer * tknzr) {
 	return 0;
 }
 
-static int json5_tokenizer_utf8_encode (uint8_t string [], unsigned c) {
-	int count = 0;
-
-	redo:
-
-	if (c < 0x80) {
-		string [0] = c;
-		count = 1;
-	}
-	else if (c < 0x800) {
-		string [0] = 0xC0 | (c >> 6);
-		string [1] = 0x80 | (c & 0x3F);
-		count = 2;
-	}
-	else if (c < 0x10000) {
-		string [0] = 0xE0 | (c >> 12);
-		string [1] = 0x80 | ((c >> 6) & 0x3F);
-		string [2] = 0x80 | (c & 0x3F);
-		count = 3;
-	}
-	else if (c <= JSON5_UT_MAX_VALUE) {
-		string [0] = 0xF0 | (c >> 18);
-		string [1] = 0x80 | ((c >> 12) & 0x3F);
-		string [2] = 0x80 | ((c >> 6) & 0x3F);
-		string [3] = 0x80 | (c & 0x3F);
-		count = 4;
-	}
-	else { // invalid rune
-		c = 0xFFFD;
-		goto redo;
-	}
-
-	return count;
-}
-
 static int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 	if (json5_tokenizer_ensure_buffer (tknzr) != 0) {
 		return -1;
 	}
 
-	if (c >= 128) {
-		tknzr -> buffer_len += json5_tokenizer_utf8_encode (tknzr -> buffer, c);
+	tknzr -> buffer [tknzr -> buffer_len ++] = c;
+
+	return 0;
+}
+
+static int json5_tokenizer_put_mb_chars (json5_tokenizer * tknzr) {
+	if (json5_tokenizer_ensure_buffer (tknzr) != 0) {
+		return -1;
 	}
-	else {
-		tknzr -> buffer [tknzr -> buffer_len ++] = c;
-	}
+
+	memcpy (&tknzr -> buffer [tknzr -> buffer_len], tknzr -> mb_char.chars, tknzr -> mb_char.length);
+	tknzr -> buffer_len += tknzr -> mb_char.length;
+	tknzr -> mb_char.length = 0;
 
 	return 0;
 }
@@ -468,6 +440,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				goto invalid_byte;
 			}
 
+			tknzr -> mb_char.chars [tknzr -> mb_char.length ++] = c;
 			value = c & 0x3F;
 			tknzr -> mb_char.value = (tknzr -> mb_char.value << 6) | value;
 
@@ -499,9 +472,11 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				else {
 					goto invalid_byte;
 				}
-				
+
+				tknzr -> mb_char.length = 0;
 				tknzr -> mb_char.value = value;
-				
+				tknzr -> mb_char.chars [tknzr -> mb_char.length ++] = c;
+
 				continue;
 			}
 		}
@@ -952,6 +927,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 						break;
 					}
 					case JSON5_TOK_NUMBER: {
+						c -= '0';
 						state = JSON5_STATE_NUMBER_EXP;
 						break;
 					}
@@ -1027,8 +1003,15 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 		switch (state) {
 			case JSON5_STATE_STRING:
 			case JSON5_STATE_NAME: {
-				if (json5_tokenizer_put_char (tknzr, c) != 0) {
-					goto alloc_error;
+				if (tknzr -> mb_char.length) {
+					if (json5_tokenizer_put_mb_chars (tknzr) != 0) {
+						goto alloc_error;
+					}
+				}
+				else {
+					if (json5_tokenizer_put_char (tknzr, c) != 0) {
+						goto alloc_error;
+					}
 				}
 				break;
 			}
@@ -1082,10 +1065,11 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 
 				if (-- tknzr -> aux_count == 0) {
 					c = tknzr -> seq_value;
+					state = JSON5_STATE_STRING;
+
 					if (json5_tokenizer_put_char (tknzr, c) != 0) {
 						goto alloc_error;
 					}
-					state = JSON5_STATE_STRING;
 				}
 				break;
 			}

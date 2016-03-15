@@ -1,3 +1,34 @@
+# Make
+
+*.a
+*.cache
+*.log
+*.o
+*.trs
+.deps
+.svn
+/aclocal.m4
+/ar-lib
+/compile
+/config.guess
+/config.h
+/config.status
+/config.sub
+/configure
+/depcomp
+/install-sh
+/missing
+/stamp-h1
+/test-driver
+Makefile
+Makefile.in
+
+# Mac OS X
+
+.DS_Store
+
+# Xcode
+
 build/
 *.pbxuser
 !default.pbxuser

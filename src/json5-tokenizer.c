@@ -318,7 +318,9 @@ static void json5_tokenizer_number_add_hex_digit (json5_tokenizer * tknzr, int v
 		if (tknzr -> number.mant.u > INT64_MAX / 16) {
 			json5_tokenizer_conv_number_float (tknzr);
 		}
+	}
 
+	if (tknzr -> number.type != JSON5_NUM_FLOAT) {
 		tknzr -> number.mant.u = 16 * tknzr -> number.mant.u;
 
 		if (tknzr -> number.mant.u > INT64_MAX - value) {

@@ -196,7 +196,7 @@ int main (int argc, const char * argv []) {
 	json5_tokenizer_init (&tknzr);
 
 	//char const * string = "{'bla':\"key\\x40\",e:1e-2,}";
-	char const * string = "{bla: 'aöäü', [-4.e5]}";
+	char const * string = "ᛮtⅧ {bla: 'aöäü', [-4.e-5, -0xfff.6]}";
 	size_t size = strlen (string);
 	json5_tokenizer_put_chars (&tknzr, (uint8_t *) string, size, put_tokens, NULL);
 

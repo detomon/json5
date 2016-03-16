@@ -1119,7 +1119,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 	return 0;
 
 	unexpected_char: {
-		json5_tokenizer_set_error (tknzr, "Unexpected char '\\u%04x' on line %lld offset %lld",
+		json5_tokenizer_set_error (tknzr, "Unexpected character '\\u%04x' on line %lld offset %lld",
 			c, offset.lineno, offset.colno);
 		goto error;
 	}
@@ -1130,13 +1130,13 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 	}
 
 	invalid_hex_char: {
-		json5_tokenizer_set_error (tknzr, "Invalid byte '\\u%02x' on line %lld offset %lld",
+		json5_tokenizer_set_error (tknzr, "Invalid hex character '\\x%02x' on line %lld offset %lld",
 			c, offset.lineno, offset.colno);
 		goto error;
 	}
 
 	invalid_byte: {
-		json5_tokenizer_set_error (tknzr, "Invalid byte '\\u%02x' on line %lld offset %lld",
+		json5_tokenizer_set_error (tknzr, "Invalid byte '\\x%02x' on line %lld offset %lld",
 			c, offset.lineno, offset.colno);
 		goto error;
 	}

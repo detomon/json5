@@ -79,7 +79,7 @@ typedef enum {
 } json5_tok_state;
 
 /**
- *
+ * Defines character lookup entry
  */
 typedef struct {
 	uint8_t type;
@@ -88,7 +88,7 @@ typedef struct {
 } json5_char;
 
 /**
- *
+ * Defines char types and attributes
  */
 static json5_char const char_types [128] = {
 	[' ']  = {.type = JSON5_TOK_SPACE    },

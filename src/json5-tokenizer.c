@@ -1033,9 +1033,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 					break;
 				}
 				case JSON5_STATE_NUMBER_SIGN: {
-					if (c == '-') {
-						tknzr -> number.sign = 1;
-					}
+					tknzr -> number.sign = (c == '-');
 					state = JSON5_STATE_NUMBER;
 					break;
 				}
@@ -1044,9 +1042,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 					break;
 				}
 				case JSON5_STATE_NUMBER_EXP_SIGN: {
-					if (c == '-') {
-						tknzr -> number.exp_sign = 1;
-					}
+					tknzr -> number.exp_sign = (c == '-');
 					state = JSON5_STATE_NUMBER_EXP;
 					break;
 				}

@@ -403,7 +403,7 @@ static void json5_tokenizer_number_end (json5_tokenizer * tknzr) {
 
 int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, size_t size, json5_put_tokens_func put_tokens, void * arg) {
 	int c;
-	int value;
+	int value = 0;
 	int res = 0;
 	int state;
 	int accept = 0;
@@ -583,7 +583,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 						case JSON5_TOK_NUMBER: {
 							state = JSON5_STATE_NUMBER;
 							json5_number_init (tknzr);
-							c -= '0';
+							value = c - '0';
 							break;
 						}
 						case JSON5_TOK_PERIOD: {
@@ -776,7 +776,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				case JSON5_STATE_NUMBER: {
 					switch (char_type) {
 						case JSON5_TOK_NUMBER: {
-							c -= '0';
+							value = c - '0';
 							break;
 						}
 						case JSON5_TOK_PERIOD: {
@@ -824,7 +824,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				case JSON5_STATE_NUMBER_FRAC: {
 					switch (char_type) {
 						case JSON5_TOK_NUMBER: {
-							c -= '0';
+							value = c - '0';
 							break;
 						}
 						default: {
@@ -906,7 +906,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				case JSON5_STATE_NUMBER_EXP: {
 					switch (char_type) {
 						case JSON5_TOK_NUMBER: {
-							c -= '0';
+							value = c - '0';
 							break;
 						}
 						default: {
@@ -933,7 +933,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 							break;
 						}
 						case JSON5_TOK_NUMBER: {
-							c -= '0';
+							value = c - '0';
 							state = JSON5_STATE_NUMBER_EXP;
 							break;
 						}
@@ -1023,7 +1023,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				}
 				case JSON5_STATE_NUMBER:
 				case JSON5_STATE_NUMBER_FRAC: {
-					json5_tokenizer_number_add_digit (tknzr, c);
+					json5_tokenizer_number_add_digit (tknzr, value);
 					break;
 				}
 				case JSON5_STATE_NUMBER_PERIOD: {
@@ -1040,7 +1040,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 					break;
 				}
 				case JSON5_STATE_NUMBER_EXP: {
-					json5_tokenizer_exp_add_digit (tknzr, c);
+					json5_tokenizer_exp_add_digit (tknzr, value);
 					break;
 				}
 				case JSON5_STATE_NUMBER_EXP_SIGN: {
@@ -1055,7 +1055,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 					break;
 				}
 				case JSON5_STATE_NUMBER_HEX: {
-					json5_tokenizer_number_add_hex_digit (tknzr, c);
+					json5_tokenizer_number_add_hex_digit (tknzr, value);
 					break;
 				}
 				case JSON5_STATE_NUMBER_DONE: {
@@ -1067,13 +1067,13 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 					break;
 				}
 				case JSON5_STATE_STRING_HEXCHAR: {
-					tknzr -> seq_value = (tknzr -> seq_value << 4) | c;
+					tknzr -> seq_value = (tknzr -> seq_value << 4) | value;
 
 					if (-- tknzr -> aux_count == 0) {
-						c = tknzr -> seq_value;
+						value = tknzr -> seq_value;
 						state = JSON5_STATE_STRING;
 
-						if (json5_tokenizer_put_char (tknzr, c) != 0) {
+						if (json5_tokenizer_put_char (tknzr, value) != 0) {
 							goto alloc_error;
 						}
 					}

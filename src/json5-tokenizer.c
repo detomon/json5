@@ -174,6 +174,7 @@ static json5_char const char_types [128] = {
 	['y']  = {.type = JSON5_TOK_NAME     },
 	['z']  = {.type = JSON5_TOK_NAME     },
 	['_']  = {.type = JSON5_TOK_NAME     },
+	['$']  = {.type = JSON5_TOK_NAME     },
 };
 
 static void json5_tokenizer_set_error (json5_tokenizer * tknzr, char const * msg, ...) {
@@ -501,8 +502,15 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				case JSON5_UT_CATEGORY_LETTER_LOWERCASE:
 				case JSON5_UT_CATEGORY_LETTER_TITLECASE:
 				case JSON5_UT_CATEGORY_LETTER_MODIFIER:
+				case JSON5_UT_CATEGORY_NUMBER_LETTER:
 				case JSON5_UT_CATEGORY_LETTER_OTHER: {
 					char_type = JSON5_TOK_NAME;
+					break;
+				}
+				case JSON5_UT_CATEGORY_MARK_NONSPACING:
+				case JSON5_UT_CATEGORY_MARK_SPACING_COMBINING:
+				case JSON5_UT_CATEGORY_NUMBER_DECIMAL_DIGIT: {
+					char_type = JSON5_TOK_NAME_OTHER;
 					break;
 				}
 				case JSON5_UT_CATEGORY_SEPARATOR_PARAGRAPH: {
@@ -651,6 +659,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				case JSON5_STATE_NAME: {
 					switch (char_type) {
 						case JSON5_TOK_NAME:
+						case JSON5_TOK_NAME_OTHER:
 						case JSON5_TOK_NUMBER: {
 							break;
 						}

@@ -31,41 +31,9 @@
 #include <sys/types.h>
 #include "json5-value.h"
 
-enum json5_writer_flag
-{
-	JSON5_WRITER_FLAG_NO_ESCAPE = 1 << 0,
-};
-
-typedef struct json5_writer json5_writer;
-
-/**
- * A callback function definition used by the writer to output data to the user.
- */
-typedef int (*json5_writer_func) (uint8_t const * string, size_t size, void * user_info);
-
-/**
- * The writer object to encode a `json5_value` into a string.
- */
-struct json5_writer {
-	uint32_t flags;
-	size_t buffer_len;
-	size_t buffer_cap;
-	uint8_t * buffer;
-	json5_writer_func write;
-	void * user_info;
-};
-
-/**
- * Initialize writer.
- */
-extern int json5_writer_init (json5_writer * writer, uint32_t flags, json5_writer_func callback, void * user_info);
-
-/**
- * Destroy writer.
- */
-extern void json5_writer_destroy (json5_writer * writer);
-
-/**
- * Write value and clear previous buffer.
- */
-extern int json5_writer_write (json5_writer * writer, json5_value const * value);
+typedef struct {
+	int * states;
+	size_t states_len;
+	size_t states_cap;
+	json5_value * value;
+} json5_parser;

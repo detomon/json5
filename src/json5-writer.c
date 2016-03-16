@@ -29,11 +29,33 @@
 #define BUFFER_CAP 4096
 #define PLACEHOLDER_KEY ((char *) 1)
 
+enum
+{
+	CHAR_TYPE_ESCAPE = 1 << 0,
+};
+
+typedef struct {
+	uint8_t flags;
+	uint8_t seq;
+} json5_char;
+
+static json5_char char_types [128] =
+{
+	['"']  = {.flags = CHAR_TYPE_ESCAPE, .seq = '"'},
+	['\b'] = {.flags = CHAR_TYPE_ESCAPE, .seq = 'b'},
+	['\f'] = {.flags = CHAR_TYPE_ESCAPE, .seq = 'f'},
+	['\n'] = {.flags = CHAR_TYPE_ESCAPE, .seq = 'n'},
+	['\r'] = {.flags = CHAR_TYPE_ESCAPE, .seq = 'r'},
+	['\t'] = {.flags = CHAR_TYPE_ESCAPE, .seq = 't'},
+	['\v'] = {.flags = CHAR_TYPE_ESCAPE, .seq = 'v'},
+};
+
 static int json5_writer_write_value (json5_writer * writer, json5_value const * value);
 
-int json5_writer_init (json5_writer * writer, json5_writer_func write, void * user_info) {
+int json5_writer_init (json5_writer * writer, uint32_t flags, json5_writer_func write, void * user_info) {
 	memset (writer, 0, sizeof (*writer));
 
+	writer -> flags = flags;
 	writer -> buffer_cap = BUFFER_CAP;
 	writer -> buffer = malloc (writer -> buffer_cap);
 
@@ -87,14 +109,6 @@ static int json5_writer_write_bytes (json5_writer * writer, uint8_t const * stri
 	size_t write_size;
 
 	while (size) {
-		if (writer -> buffer_len >= writer -> buffer_cap) {
-			res = json5_writer_flush_buffer (writer);
-
-			if (res != 0) {
-				return res;
-			}
-		}
-
 		free_size = writer -> buffer_cap - writer -> buffer_len;
 		write_size = size < free_size ? size : free_size;
 
@@ -102,6 +116,113 @@ static int json5_writer_write_bytes (json5_writer * writer, uint8_t const * stri
 		writer -> buffer_len += write_size;
 		size -= write_size;
 		string += write_size;
+
+		res = json5_writer_flush_buffer (writer);
+
+		if (res != 0) {
+			return res;
+		}
+	}
+
+	return 0;
+}
+
+static size_t json5_writer_write_escape_sequence (uint8_t const ** string_ref, uint8_t buffer [], unsigned c)
+{
+	unsigned count;
+	unsigned value = 0;
+	unsigned su1, su2;
+	size_t len = 0;
+	uint8_t const * string = *string_ref;
+
+	if ((c & 0xE0) == 0xC0) {
+		value = c & 0x1F;
+		count = 1;
+	}
+	else if ((c & 0xF0) == 0xE0) {
+		value = c & 0xF;
+		count = 2;
+	}
+	else if ((c & 0xF8) == 0xF0) {
+		value = c & 0x7;
+		count = 3;
+	}
+	else {
+		value = 0xDC00 | c;
+		count = 0;
+	}
+
+	while (count) {
+		c = *string ++;
+		value = (value << 6) | (c & 0x3F);
+		count --;
+	}
+
+	if (value <= 0xFFFF) {
+		snprintf ((char *) &buffer [len], 8, "\\u%04x", value);
+		len += 6;
+	}
+	// write surrogates
+	else {
+		value -= 0x10000;
+		su1 = ((value >> 10) & 0x3FF) + 0xD800;
+		su2 = (value & 0x3FF) + 0xDC00;
+		snprintf ((char *) &buffer [len], 8, "\\u%04x", su1);
+		len += 6;
+		snprintf ((char *) &buffer [len], 8, "\\u%04x", su2);
+		len += 6;
+	}
+
+	*string_ref = string;
+
+	return len;
+}
+
+static int json5_writer_write_escaped_bytes (json5_writer * writer, uint8_t const * string, size_t size) {
+	unsigned c;
+	unsigned res;
+	size_t free_size;
+	size_t write_size;
+	uint8_t const * string_start;
+	uint8_t const * string_end;
+	unsigned escape_uc = !(writer -> flags & JSON5_WRITER_FLAG_NO_ESCAPE);
+
+	while (size) {
+		free_size = (writer -> buffer_cap - writer -> buffer_len);
+		// assume every char has to be escaped with surrogates \uXXXX\uXXXX
+		write_size = size < free_size / 12 ? size : free_size / 12;
+		string_start = string;
+		string_end = &string [write_size];
+
+		while (string < string_end) {
+			c = *string ++;
+
+			if (c < 128) {
+				if (char_types [c].flags) {
+					if (char_types [c].flags & CHAR_TYPE_ESCAPE) {
+						writer -> buffer [writer -> buffer_len ++] = '\\';
+						writer -> buffer [writer -> buffer_len ++] = char_types [c].seq;
+					}
+				}
+				else {
+					writer -> buffer [writer -> buffer_len ++] = c;
+				}
+			}
+			else if (escape_uc) {
+				writer -> buffer_len += json5_writer_write_escape_sequence (&string, &writer -> buffer [writer -> buffer_len], c);
+			}
+			else {
+				writer -> buffer [writer -> buffer_len ++] = c;
+			}
+		}
+
+		size -= (string - string_start);
+
+		res = json5_writer_flush_buffer (writer);
+
+		if (res != 0) {
+			return res;
+		}
 	}
 
 	return 0;
@@ -150,7 +271,7 @@ static int json5_writer_write_string (json5_writer * writer, json5_value const *
 		return -1;
 	}
 
-	if ((res = json5_writer_write_bytes (writer, value -> str.s, value -> str.len)) != 0) {
+	if ((res = json5_writer_write_escaped_bytes (writer, value -> str.s, value -> str.len)) != 0) {
 		return res;
 	}
 
@@ -193,7 +314,15 @@ static int json5_writer_write_array (json5_writer * writer, json5_value const * 
 static int json5_writer_write_prop (json5_writer * writer, json5_obj_prop const * prop) {
 	int res;
 
-	if ((res = json5_writer_write_bytes (writer, (void const *) prop -> key, prop -> key_len)) != 0) {
+	if ((res = json5_writer_write_byte (writer, '"')) != 0) {
+		return -1;
+	}
+
+	if ((res = json5_writer_write_escaped_bytes (writer, (void const *) prop -> key, prop -> key_len)) != 0) {
+		return -1;
+	}
+
+	if ((res = json5_writer_write_byte (writer, '"')) != 0) {
 		return -1;
 	}
 

@@ -455,7 +455,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 		if (chars < end) {
 			c = *chars ++;
 
-			if ((c & 0xC0) == 0xC0) {
+			if (c >= 128) {
 				if ((c & 0xE0) == 0xC0) {
 					value = c & 0x1F;
 					tknzr -> mb_char.count = 1;

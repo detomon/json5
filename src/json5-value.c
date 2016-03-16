@@ -226,6 +226,10 @@ json5_value * json5_value_get_prop (json5_value * value, char const * key, size_
 		return NULL;
 	}
 
+	if (key_len == (size_t) -1) {
+		key_len = strlen (key);
+	}
+
 	hash = json5_get_hash (key, key_len);
 	prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, key, key_len);
 
@@ -282,6 +286,10 @@ json5_value * json5_value_set_prop (json5_value * value, char const * key, size_
 		if (json5_object_grow (value) != 0) {
 			return NULL;
 		}
+	}
+
+	if (key_len == (size_t) -1) {
+		key_len = strlen (key);
 	}
 
 	hash = json5_get_hash (key, key_len);

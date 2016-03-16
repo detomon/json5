@@ -123,13 +123,13 @@ extern void json5_value_set_nan (json5_value * value);
 /**
  * Set value to `Infinity`.
  *
- * If sign is 0, the value is positive infinite (+Infinity)
+ * If sign is >= 0, the value is positive infinite (+Infinity)
  * otherwise negative infinite (-Infinity).
  */
 extern void json5_value_set_infinity (json5_value * value, int sign);
 
 /**
- * Set value to `null`
+ * Set value to `null`.
  */
 extern void json5_value_set_null (json5_value * value);
 
@@ -177,10 +177,11 @@ extern json5_value * json5_value_append_item (json5_value * value);
 extern json5_value * json5_value_get_prop (json5_value * value, char const * key, size_t key_len);
 
 /**
- * Set or replace property with key
+ * Set or replace property with key.
  *
  * Initializes the value with `null`.
  * If `value` is not an object, NULL is returned.
+ * If `key_len` is -1, the length is determined with `strlen`.
  * Replaces current value content.
  * Returns reference to inserted property.
  */

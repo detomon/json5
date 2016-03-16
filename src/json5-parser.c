@@ -21,51 +21,22 @@
  * IN THE SOFTWARE.
  */
 
-#pragma once
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <stdint.h>
-#include <sys/types.h>
-#include "json5-value.h"
-
-enum json5_writer_flag
-{
-	JSON5_WRITER_FLAG_NO_ESCAPE = 1 << 0,
-};
-
-typedef struct json5_writer json5_writer;
+#include "json5-parser.h"
 
 /**
- * A callback function definition used by the writer to output data to the user.
+ * Defines parser states
  */
-typedef int (*json5_writer_func) (uint8_t const * string, size_t size, void * user_info);
+typedef enum {
+	JSON5_STATE_NONE = 0,
+	JSON5_STATE_ARR,
+	JSON5_STATE_ARR_VAL,
+	JSON5_STATE_ARR_SEP,
+	JSON5_STATE_OBJ,
+	JSON5_STATE_OBJ_VAL,
+	JSON5_STATE_OBJ_SEP,
+	JSON5_STATE_OBJ_KEY_SEP,
+	JSON5_STATE_END,
+	JSON5_STATE_ERROR,
+} json5_parser_state;
 
-/**
- * The writer object to encode a `json5_value` into a string.
- */
-struct json5_writer {
-	uint32_t flags;
-	size_t buffer_len;
-	size_t buffer_cap;
-	uint8_t * buffer;
-	json5_writer_func write;
-	void * user_info;
-};
 
-/**
- * Initialize writer.
- */
-extern int json5_writer_init (json5_writer * writer, uint32_t flags, json5_writer_func callback, void * user_info);
-
-/**
- * Destroy writer.
- */
-extern void json5_writer_destroy (json5_writer * writer);
-
-/**
- * Write value and clear previous buffer.
- */
-extern int json5_writer_write (json5_writer * writer, json5_value const * value);

@@ -13,6 +13,7 @@
 		F466AD721C95642400D4D738 /* json5.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD651C95642400D4D738 /* json5.c */; };
 		F466AD891C95646A00D4D738 /* unicode-table.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD811C95646A00D4D738 /* unicode-table.c */; };
 		F466AD8C1C9564C500D4D738 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD8B1C9564C500D4D738 /* main.c */; };
+		F4FB9DAC1C999001008FB70C /* json5-parser.c in Sources */ = {isa = PBXBuildFile; fileRef = F4FB9DAA1C999001008FB70C /* json5-parser.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -45,6 +46,8 @@
 		F466AD841C95646A00D4D738 /* unicode-table.h.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "unicode-table.h.in"; sourceTree = "<group>"; };
 		F466AD861C95646A00D4D738 /* UnicodeData.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = UnicodeData.txt; sourceTree = "<group>"; };
 		F466AD8B1C9564C500D4D738 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = json5/main.c; sourceTree = "<group>"; };
+		F4FB9DAA1C999001008FB70C /* json5-parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "json5-parser.c"; sourceTree = "<group>"; };
+		F4FB9DAB1C999001008FB70C /* json5-parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "json5-parser.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +84,8 @@
 			children = (
 				F466AD5C1C95642400D4D738 /* json5-tokenizer.c */,
 				F466AD5D1C95642400D4D738 /* json5-tokenizer.h */,
+				F4FB9DAA1C999001008FB70C /* json5-parser.c */,
+				F4FB9DAB1C999001008FB70C /* json5-parser.h */,
 				F466AD5F1C95642400D4D738 /* json5-value.c */,
 				F466AD601C95642400D4D738 /* json5-value.h */,
 				F466AD621C95642400D4D738 /* json5-writer.c */,
@@ -164,6 +169,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F466AD891C95646A00D4D738 /* unicode-table.c in Sources */,
+				F4FB9DAC1C999001008FB70C /* json5-parser.c in Sources */,
 				F466AD6C1C95642400D4D738 /* json5-tokenizer.c in Sources */,
 				F466AD8C1C9564C500D4D738 /* main.c in Sources */,
 				F466AD701C95642400D4D738 /* json5-writer.c in Sources */,

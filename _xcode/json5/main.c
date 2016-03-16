@@ -145,14 +145,14 @@ int main (int argc, const char * argv []) {
 	json5_value_set_object (&value);
 	assert (value.type == JSON5_TYPE_OBJECT);
 
-	item = json5_value_set_prop (&value, "akey34", 6);
+	item = json5_value_set_prop (&value, "ä💀key \n4", -1);
 	assert (item -> type == JSON5_TYPE_NULL);
 	assert (item != NULL);
 
 	json5_value_set_float (item, -34.3);
 	assert (item -> type == JSON5_TYPE_FLOAT);
 
-	item2 = json5_value_set_prop (&value, "akey34", 6);
+	item2 = json5_value_set_prop (&value, "ä💀key \n4", -1);
 	assert (item2 != NULL);
 	assert (item2 == item);
 	assert (item2 -> type == JSON5_TYPE_NULL);
@@ -161,7 +161,7 @@ int main (int argc, const char * argv []) {
 	json5_value_set_float (item, -4e6);
 	//assert (item -> type == JSON5_TYPE_INT);
 
-	item2 = json5_value_set_prop (&value, "somkey44", 8);
+	item2 = json5_value_set_prop (&value, "somkey44", -1);
 	assert (item2 != item);
 	assert (item2 -> type == JSON5_TYPE_NULL);
 	assert (value.obj.len == 2);
@@ -169,13 +169,22 @@ int main (int argc, const char * argv []) {
 	json5_value_set_string (item2, "astring", 7);
 	assert (item2 -> type == JSON5_TYPE_STRING);
 
-	item = json5_value_get_prop (&value, "akey34", 6);
+	item = json5_value_get_prop (&value, "ä💀key \n4", -1);
 	assert (item != NULL);
 	//assert (item -> type == JSON5_TYPE_INT);
 
-	item = json5_value_get_prop (&value, "somkey44", 8);
+	item = json5_value_get_prop (&value, "somkey44", -1);
 	assert (item != NULL);
 	assert (item -> type == JSON5_TYPE_STRING);
+
+	item2 = json5_value_set_prop (&value, "arr", -1);
+	json5_value_set_array (item2);
+
+	item = json5_value_append_item (item2);
+	json5_value_set_infinity (item, 0);
+
+	item = json5_value_append_item (item2);
+	json5_value_set_string (item, "\"\n", 2);
 
 	/*assert (json5_value_delete_prop (&value, "akey34", 6) == 1);
 	assert (value.val.obj.len == 1);
@@ -185,7 +194,7 @@ int main (int argc, const char * argv []) {
 
 
 	json5_writer writer;
-	json5_writer_init (&writer, write_json, NULL);
+	json5_writer_init (&writer, JSON5_WRITER_FLAG_NO_ESCAPE, write_json, NULL);
 
 	json5_writer_write (&writer, &value);
 

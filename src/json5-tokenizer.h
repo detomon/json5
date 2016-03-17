@@ -47,8 +47,8 @@ typedef enum {
 	JSON5_TOK_STRING,
 	JSON5_TOK_NUMBER,
 	JSON5_TOK_NUMBER_FLOAT,
-	JSON5_TOK_NUMBER_SIGN,
 	JSON5_TOK_NAME,
+	JSON5_TOK_NAME_SIGN,
 	// internal
 	JSON5_TOK_NAME_OTHER,
 	JSON5_TOK_COMMENT,
@@ -144,8 +144,6 @@ extern int json5_tokenizer_init (json5_tokenizer * tknzr);
  *
  * It then can be used to tokenize a new JSON string. The allocated memory will
  * be preserved.
- *
- * Returns 0 on success or -1 if an error occurred.
  */
 extern void json5_tokenizer_reset (json5_tokenizer * tknzr);
 

@@ -121,12 +121,12 @@ static int put_tokens (json5_token const * token, void * arg) {
 			printf (">> f: %lf\n", token -> value.f);
 			break;
 		}
-		case JSON5_TOK_NUMBER_SIGN: {
-			printf (">> -\n");
-			break;
-		}
 		case JSON5_TOK_NAME: {
 			printf (">> name: \"%s\"\n", token -> token);
+			break;
+		}
+		case JSON5_TOK_NAME_SIGN: {
+			printf (">> sign name: \"%s\" %lld\n", token -> token, token -> value.i);
 			break;
 		}
 		case JSON5_TOK_END: {
@@ -256,7 +256,7 @@ int main (int argc, const char * argv []) {
 	json5_tokenizer_init (&tknzr);
 
 	//char const * string = "{'bla':\"key\\x40\",e:1e-2,}";
-	char const * string = "-Infinity, {, ᛮtⅧ: 'aöäü', [-4.e-5, -0xfff.6]}";
+	char const * string = "-NaN, {, ᛮtⅧ: 'aöäü', [-4.e-5, -0xfff.6]}";
 	size_t size = strlen (string);
 	json5_tokenizer_put_chars (&tknzr, (uint8_t *) string, size, put_tokens, NULL);
 

@@ -55,6 +55,7 @@ typedef enum {
 	JSON5_STATE_NONE = 0,
 	JSON5_STATE_SPACE,
 	JSON5_STATE_NAME,
+	JSON5_STATE_NAME_SIGN,
 	JSON5_STATE_STRING,
 	JSON5_STATE_STRING_BEGIN,   // '"' or "'"
 	JSON5_STATE_STRING_ESCAPE,  // '\'
@@ -646,6 +647,19 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 
 					break;
 				}
+				case JSON5_STATE_NAME_SIGN: {
+					switch (char_type) {
+						case JSON5_TOK_NAME:
+							break;
+						default: {
+							goto unexpected_char;
+							break;
+						}
+					}
+
+					state = JSON5_STATE_NAME;
+					break;
+				}
 				case JSON5_STATE_STRING:
 				case JSON5_STATE_STRING_BEGIN: {
 					switch (char_type) {
@@ -724,10 +738,6 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 					break;
 				}
 				case JSON5_STATE_NUMBER_SIGN: {
-					if (c == '-') {
-						tknzr -> number.sign = 1;
-					}
-
 					switch (char_type) {
 						case JSON5_TOK_NUMBER: {
 							state = JSON5_STATE_NUMBER;
@@ -735,6 +745,10 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 						}
 						case JSON5_TOK_PERIOD: {
 							state = JSON5_STATE_NUMBER_PERIOD;
+							break;
+						}
+						case JSON5_TOK_END: {
+							goto unexpected_end;
 							break;
 						}
 						default: {
@@ -755,12 +769,19 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							state = JSON5_STATE_NUMBER_PERIOD;
 							break;
 						}
-						default: {
+						case JSON5_TOK_NAME: {
 							token = &tknzr -> token;
-							token -> type = JSON5_TOK_NUMBER_SIGN;
-							state = JSON5_STATE_NONE;
-							accept = 1;
-							again = 1;
+							token -> type = JSON5_TOK_NAME_SIGN;
+							token -> value.i = tknzr -> number.sign;
+							state = JSON5_STATE_NAME_SIGN;
+							break;
+						}
+						case JSON5_TOK_END: {
+							goto unexpected_end;
+							break;
+						}
+						default: {
+							goto unexpected_char;
 							break;
 						}
 					}
@@ -820,6 +841,10 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							value = c - '0';
 							break;
 						}
+						case JSON5_TOK_END: {
+							goto unexpected_end;
+							break;
+						}
 						default: {
 							switch (c) {
 								case 'e':
@@ -834,12 +859,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 								}
 								default: {
 									if (!tknzr -> number.length) {
-										if (char_type == JSON5_TOK_END) {
-											goto unexpected_end;
-										}
-										else {
-											goto unexpected_char;
-										}
+										goto unexpected_char;
 									}
 
 									state = JSON5_STATE_NUMBER_DONE;
@@ -1000,8 +1020,9 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 
 			// token actions
 			switch (state) {
-				case JSON5_STATE_STRING:
-				case JSON5_STATE_NAME: {
+				case JSON5_STATE_NAME:
+				case JSON5_STATE_NAME_SIGN:
+				case JSON5_STATE_STRING: {
 					if (tknzr -> mb_char.length) {
 						json5_tokenizer_put_mb_chars (tknzr);
 					}

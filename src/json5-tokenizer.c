@@ -62,6 +62,7 @@ typedef enum {
 	JSON5_STATE_STRING_HEXCHAR_BEGIN, // 'x'
 	JSON5_STATE_NUMBER,
 	JSON5_STATE_NUMBER_SIGN,
+	JSON5_STATE_NUMBER_START,
 	JSON5_STATE_NUMBER_FRAC,
 	JSON5_STATE_NUMBER_PERIOD,
 	JSON5_STATE_NUMBER_EXP,
@@ -191,17 +192,15 @@ static void json5_tokenizer_set_error (json5_tokenizer * tknzr, char const * msg
 static void json5_tokenizer_relocate_token_data (json5_tokenizer * tknzr, uint8_t * new_buf) {
 	json5_token * token;
 
-	for (int i = 0; i < tknzr -> token_count; i ++) {
-		token = &tknzr -> tokens [i];
-		token -> token = new_buf + (token -> token - tknzr -> buffer);
-	}
+	token = &tknzr -> token;
+	token -> token = new_buf + (token -> token - tknzr -> buffer);
 }
 
-static int json5_tokenizer_ensure_buffer (json5_tokenizer * tknzr) {
+static int json5_tokenizer_ensure_buffer_space (json5_tokenizer * tknzr, size_t size) {
 	size_t new_cap;
 	uint8_t * new_buf;
 
-	if (tknzr -> buffer_len + BUF_MIN_FREE_SPACE >= tknzr -> buffer_cap) {
+	if (tknzr -> buffer_len + size + BUF_MIN_FREE_SPACE >= tknzr -> buffer_cap) {
 		new_cap = tknzr -> buffer_cap * 2;
 		new_buf = realloc (tknzr -> buffer, new_cap);
 
@@ -218,36 +217,21 @@ static int json5_tokenizer_ensure_buffer (json5_tokenizer * tknzr) {
 	return 0;
 }
 
-static int json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
-	if (json5_tokenizer_ensure_buffer (tknzr) != 0) {
-		return -1;
-	}
-
+static void json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 	tknzr -> buffer [tknzr -> buffer_len ++] = c;
-
-	return 0;
 }
 
-static int json5_tokenizer_put_mb_chars (json5_tokenizer * tknzr) {
-	if (json5_tokenizer_ensure_buffer (tknzr) != 0) {
-		return -1;
-	}
-
+static void json5_tokenizer_put_mb_chars (json5_tokenizer * tknzr) {
 	memcpy (&tknzr -> buffer [tknzr -> buffer_len], tknzr -> mb_char.chars, tknzr -> mb_char.length);
 	tknzr -> buffer_len += tknzr -> mb_char.length;
 	tknzr -> mb_char.length = 0;
-
-	return 0;
 }
 
 static void json5_tokenizer_end_buffer (json5_tokenizer * tknzr) {
 	// terminate current buffer segment
 	tknzr -> buffer [tknzr -> buffer_len ++] = '\0';
-
-	// align next buffer segment to pointer size
-	while (tknzr -> buffer_len & (sizeof (void *) - 1)) {
-		tknzr -> buffer [tknzr -> buffer_len ++] = '\0';
-	}
+	// reset buffer
+	tknzr -> buffer_len = 0;
 }
 
 int json5_tokenizer_init (json5_tokenizer * tknzr) {
@@ -401,14 +385,13 @@ static void json5_tokenizer_number_end (json5_tokenizer * tknzr) {
 	}
 }
 
-int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, size_t size, json5_put_tokens_func put_tokens, void * arg) {
+static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t const * chars, size_t size, json5_put_token_func put_token, void * arg) {
 	int c;
+	int state;
 	int value = 0;
 	int res = 0;
-	int state;
-	int accept = 0;
+	int accept;
 	int again;
-	int accept_count;
 	json5_off offset;
 	json5_tok_type char_type;
 	json5_token * token;
@@ -421,7 +404,11 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 
 	state = tknzr -> state;
 	offset = tknzr -> offset;
-	accept_count = tknzr -> accept_count;
+
+	// ensure buffer space for worst case
+	if (json5_tokenizer_ensure_buffer_space (tknzr, size * 2) != 0) {
+		goto alloc_error;
+	}
 
 	do {
 		if (tknzr -> mb_char.count) {
@@ -451,8 +438,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				continue;
 			}
 		}
-
-		if (chars < end) {
+		else if (chars < end) {
 			c = *chars ++;
 
 			if (c >= 128) {
@@ -577,6 +563,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 						}
 						case JSON5_TOK_SIGN: {
 							state = JSON5_STATE_NUMBER_SIGN;
+							char_type = JSON5_TOK_NUMBER;
 							json5_number_init (tknzr);
 							break;
 						}
@@ -588,6 +575,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 						}
 						case JSON5_TOK_PERIOD: {
 							state = JSON5_STATE_NUMBER_PERIOD;
+							char_type = JSON5_TOK_NUMBER;
 							json5_number_init (tknzr);
 							break;
 						}
@@ -620,27 +608,10 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 					}
 
 					if (capture) {
-						if (accept_count >= JSON5_NUM_TOKS) {
-							if ((res = put_tokens (tknzr -> tokens, accept_count, arg)) != 0) {
-								json5_tokenizer_set_error (tknzr, "User error: %d", res);
-								goto error;
-							}
-
-							memmove (&tknzr -> tokens [0], &tknzr -> tokens [accept_count], (JSON5_NUM_TOKS - accept_count) * sizeof (json5_token));
-							tknzr -> token_count -= accept_count;
-
-							if (!tknzr -> token_count) {
-								tknzr -> buffer_len = 0;
-							}
-
-							accept_count = 0;
-						}
-
-						token = &tknzr -> tokens [tknzr -> token_count ++];
+						token = &tknzr -> token;
 						token -> type = char_type;
 						token -> token = &tknzr -> buffer [tknzr -> buffer_len];
-						token -> offset.lineno = tknzr -> offset.lineno;
-						token -> offset.colno = tknzr -> offset.colno + 1;
+						token -> offset = tknzr -> offset;
 					}
 
 					break;
@@ -690,7 +661,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 							break;
 						}
 						case JSON5_TOK_END: {
-							goto unexpected_end;
+							goto unexpected_end_starting;
 							break;
 						}
 						default: {
@@ -704,7 +675,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				case JSON5_STATE_STRING_ESCAPE: {
 					switch (char_type) {
 						case JSON5_TOK_END: {
-							goto unexpected_end;
+							goto unexpected_end_starting;
 							break;
 						}
 						default: {
@@ -768,6 +739,28 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 						}
 						default: {
 							goto unexpected_char;
+							break;
+						}
+					}
+					break;
+				}
+				case JSON5_STATE_NUMBER_START: {
+					switch (char_type) {
+						case JSON5_TOK_NUMBER: {
+							value = c - '0';
+							state = JSON5_STATE_NUMBER;
+							break;
+						}
+						case JSON5_TOK_PERIOD: {
+							state = JSON5_STATE_NUMBER_PERIOD;
+							break;
+						}
+						default: {
+							token = &tknzr -> token;
+							token -> type = JSON5_TOK_NUMBER_SIGN;
+							state = JSON5_STATE_NONE;
+							accept = 1;
+							again = 1;
 							break;
 						}
 					}
@@ -864,7 +857,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 						case JSON5_TOK_NAME:
 						case JSON5_TOK_NUMBER: {
 							if (c < 128 && char_types [c].hex) {
-								c = char_types [c].hex & HEX_VAL_MASK;
+								value = char_types [c].hex & HEX_VAL_MASK;
 								state = JSON5_STATE_NUMBER_HEX;
 							}
 							else {
@@ -888,7 +881,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 						case JSON5_TOK_NAME:
 						case JSON5_TOK_NUMBER: {
 							if (c < 128 && char_types [c].hex) {
-								c = char_types [c].hex & HEX_VAL_MASK;
+								value = char_types [c].hex & HEX_VAL_MASK;
 							}
 							else {
 								goto invalid_hex_char;
@@ -1010,14 +1003,10 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				case JSON5_STATE_STRING:
 				case JSON5_STATE_NAME: {
 					if (tknzr -> mb_char.length) {
-						if (json5_tokenizer_put_mb_chars (tknzr) != 0) {
-							goto alloc_error;
-						}
+						json5_tokenizer_put_mb_chars (tknzr);
 					}
 					else {
-						if (json5_tokenizer_put_char (tknzr, c) != 0) {
-							goto alloc_error;
-						}
+						json5_tokenizer_put_char (tknzr, c);
 					}
 					break;
 				}
@@ -1034,7 +1023,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				}
 				case JSON5_STATE_NUMBER_SIGN: {
 					tknzr -> number.sign = (c == '-');
-					state = JSON5_STATE_NUMBER;
+					state = JSON5_STATE_NUMBER_START;
 					break;
 				}
 				case JSON5_STATE_NUMBER_EXP: {
@@ -1056,8 +1045,22 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 				}
 				case JSON5_STATE_NUMBER_DONE: {
 					json5_tokenizer_number_end (tknzr);
-					token = &tknzr -> tokens [tknzr -> token_count - 1];
+					token = &tknzr -> token;
 					token -> value.i = tknzr -> number.mant.i;
+
+					switch (tknzr -> number.type) {
+						default:
+						case JSON5_NUM_INT:
+						case JSON5_NUM_HEX: {
+							token -> type = JSON5_TOK_NUMBER;
+							break;
+						}
+						case JSON5_NUM_FLOAT: {
+							token -> type = JSON5_TOK_NUMBER_FLOAT;
+							break;
+						}
+					}
+
 					state = JSON5_STATE_NONE;
 					accept = 1;
 					break;
@@ -1068,10 +1071,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 					if (-- tknzr -> aux_count == 0) {
 						value = tknzr -> seq_value;
 						state = JSON5_STATE_STRING;
-
-						if (json5_tokenizer_put_char (tknzr, value) != 0) {
-							goto alloc_error;
-						}
+						json5_tokenizer_put_char (tknzr, value);
 					}
 					break;
 				}
@@ -1090,17 +1090,13 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 			}
 
 			if (accept) {
-				accept_count ++;
-
-				token = &tknzr -> tokens [tknzr -> token_count - 1];
+				token = &tknzr -> token;
 				token -> length = &tknzr -> buffer [tknzr -> buffer_len] - token -> token;
 				json5_tokenizer_end_buffer (tknzr);
 
-				if (state == JSON5_STATE_END) {
-					if ((res = put_tokens (tknzr -> tokens, accept_count, arg)) != 0) {
-						json5_tokenizer_set_error (tknzr, "User error: %d", res);
-						goto error;
-					}
+				if ((res = put_token (&tknzr -> token, arg)) != 0) {
+					json5_tokenizer_set_error (tknzr, "User error: %d", res);
+					goto error;
 				}
 			}
 		}
@@ -1110,12 +1106,11 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 
 	tknzr -> state = state;
 	tknzr -> offset = offset;
-	tknzr -> accept_count = accept_count;
 
 	return 0;
 
 	unexpected_char: {
-		json5_tokenizer_set_error (tknzr, "Unexpected character '\\u%04x' on line %lld offset %lld",
+		json5_tokenizer_set_error (tknzr, "Unexpected character '\\u%04x' on line %d:%d",
 			c, offset.lineno, offset.colno);
 		goto error;
 	}
@@ -1125,14 +1120,20 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 		goto error;
 	}
 
+	unexpected_end_starting: {
+		json5_tokenizer_set_error (tknzr, "Premature end of file for string starting at %d:%d",
+			tknzr -> token.offset.lineno, tknzr -> token.offset.colno);
+		goto error;
+	}
+
 	invalid_hex_char: {
-		json5_tokenizer_set_error (tknzr, "Invalid hex character '\\x%02x' on line %lld offset %lld",
+		json5_tokenizer_set_error (tknzr, "Invalid hex character '\\x%02x' on line %d:%d",
 			c, offset.lineno, offset.colno);
 		goto error;
 	}
 
 	invalid_byte: {
-		json5_tokenizer_set_error (tknzr, "Invalid byte '\\x%02x' on line %lld offset %lld",
+		json5_tokenizer_set_error (tknzr, "Invalid byte '\\x%02x' on line %d:%d",
 			c, offset.lineno, offset.colno);
 		goto error;
 	}
@@ -1147,6 +1148,29 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 
 		return -1;
 	}
+}
+
+/**
+ * Splits input chars into smaller chunks for better buffer usage
+ */
+int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, size_t size, json5_put_token_func put_token, void * arg) {
+	int res;
+	size_t chunk_size;
+	size_t const max_size = 1024;
+
+	do {
+		chunk_size = size > max_size ? max_size : size;
+
+		if ((res = json5_tokenizer_put_chars_chunk (tknzr, chars, chunk_size, put_token, arg)) != 0) {
+			break;
+		}
+
+		chars += chunk_size;
+		size -= chunk_size;
+	}
+	while (size);
+
+	return 0;
 }
 
 char const * json5_tokenizer_get_error (json5_tokenizer const * tknzr) {

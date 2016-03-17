@@ -83,10 +83,61 @@ static int write_json (uint8_t const * string, size_t size, void * info) {
 	return 0;
 }
 
-static int put_tokens (json5_token const * tokens, size_t count, void * arg) {
-	for (size_t i = 0; i < count; i ++) {
-		printf (">> '%s' %lld, %lf (%d)\n", tokens [i].token, tokens [i].value.i, tokens [i].value.f, tokens [i].type);
+static int put_tokens (json5_token const * token, void * arg) {
+	switch (token -> type) {
+		case JSON5_TOK_OBJ_OPEN: {
+			printf (">> {\n");
+			break;
+		}
+		case JSON5_TOK_OBJ_CLOSE: {
+			printf (">> }\n");
+			break;
+		}
+		case JSON5_TOK_ARR_OPEN: {
+			printf (">> [\n");
+			break;
+		}
+		case JSON5_TOK_ARR_CLOSE: {
+			printf (">> ]\n");
+			break;
+		}
+		case JSON5_TOK_COMMA: {
+			printf (">> ,\n");
+			break;
+		}
+		case JSON5_TOK_COLON: {
+			printf (">> :\n");
+			break;
+		}
+		case JSON5_TOK_STRING: {
+			printf (">> str: \"%s\"\n", token -> token);
+			break;
+		}
+		case JSON5_TOK_NUMBER: {
+			printf (">> i: %lld\n", token -> value.i);
+			break;
+		}
+		case JSON5_TOK_NUMBER_FLOAT: {
+			printf (">> f: %lf\n", token -> value.f);
+			break;
+		}
+		case JSON5_TOK_NUMBER_SIGN: {
+			printf (">> -\n");
+			break;
+		}
+		case JSON5_TOK_NAME: {
+			printf (">> name: \"%s\"\n", token -> token);
+			break;
+		}
+		case JSON5_TOK_END: {
+			printf (">> END\n");
+			break;
+		}
+		default: {
+			break;
+		}
 	}
+
 
 	return 0;
 }
@@ -205,7 +256,7 @@ int main (int argc, const char * argv []) {
 	json5_tokenizer_init (&tknzr);
 
 	//char const * string = "{'bla':\"key\\x40\",e:1e-2,}";
-	char const * string = "ᛮtⅧ {bla: 'aöäü', [-4.e-5, -0xfff.6]}";
+	char const * string = "-Infinity, {, ᛮtⅧ: 'aöäü', [-4.e-5, -0xfff.6]}";
 	size_t size = strlen (string);
 	json5_tokenizer_put_chars (&tknzr, (uint8_t *) string, size, put_tokens, NULL);
 

@@ -30,10 +30,61 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include "json5-value.h"
+#include "json5-tokenizer.h"
 
 typedef struct {
-	int * states;
-	size_t states_len;
-	size_t states_cap;
+	int state;
 	json5_value * value;
+} json5_parser_item;
+
+typedef struct {
+	int state;
+	json5_parser_item * stack;
+	size_t stack_len;
+	size_t stack_cap;
+	json5_value obj_key;
+	json5_value value;
+	json5_value error;
 } json5_parser;
+
+/**
+ * Initialize a parser.
+ *
+ * Returns 0 on success or -1 if an error occurred.
+ */
+extern int json5_parser_init (json5_parser * parser);
+
+/**
+ * Reset a parser.
+ *
+ * It then can be used to parse new tokens. The allocated memory will
+ * be preserved.
+ */
+extern void json5_parser_reset (json5_parser * parser);
+
+/**
+ * Destroy a parser.
+ */
+extern void json5_parser_destroy (json5_parser * parser);
+
+/**
+ * Parser tokens
+ */
+extern int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, size_t count);
+
+/**
+ * Check if parser is finished
+ *
+ * Returns 1 if parser is finished or an error ocurred
+ */
+extern int json5_parser_is_finished (json5_parser const * parser);
+
+/**
+ * Check if parser has encountered an error
+ */
+extern int json5_parser_has_error (json5_parser const * parser);
+
+/**
+ * Returns the last error message or NULL if no error is present.
+ */
+extern json5_value const * json5_parser_get_error (json5_parser const * parser);

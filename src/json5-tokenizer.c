@@ -1115,6 +1115,49 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 				token -> length = &tknzr -> buffer [tknzr -> buffer_len] - token -> token;
 				json5_tokenizer_end_buffer (tknzr);
 
+				switch (token -> type) {
+					case JSON5_TOK_NAME: {
+						if (strcmp ((char *) token -> token, "true") == 0) {
+							token -> type = JSON5_TOK_NUMBER_BOOL;
+							token -> value.i = 1;
+						}
+						else if (strcmp ((char *) token -> token, "false") == 0) {
+							token -> type = JSON5_TOK_NUMBER_BOOL;
+							token -> value.i = 0;
+						}
+						else if (strcmp ((char *) token -> token, "null") == 0) {
+							token -> type = JSON5_TOK_NULL;
+						}
+						else if (strcmp ((char *) token -> token, "NaN") == 0) {
+							token -> type = JSON5_TOK_NAN;
+						}
+						else if (strcmp ((char *) token -> token, "Infinity") == 0) {
+							token -> type = JSON5_TOK_INFINITY;
+						}
+
+						break;
+					}
+					case JSON5_TOK_NAME_SIGN: {
+						if (strcmp ((char *) token -> token, "null") == 0) {
+							token -> type = JSON5_TOK_NULL;
+						}
+						else if (strcmp ((char *) token -> token, "NaN") == 0) {
+							token -> type = JSON5_TOK_NAN;
+						}
+						else if (strcmp ((char *) token -> token, "Infinity") == 0) {
+							token -> type = JSON5_TOK_INFINITY;
+						}
+						else {
+							goto invalid_token;
+						}
+
+						break;
+					}
+					default: {
+						break;
+					}
+				}
+
 				if ((res = put_token (&tknzr -> token, arg)) != 0) {
 					json5_tokenizer_set_error (tknzr, "User error: %d", res);
 					goto error;
@@ -1129,6 +1172,12 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	tknzr -> offset = offset;
 
 	return 0;
+
+	invalid_token: {
+		json5_tokenizer_set_error (tknzr, "Invalid token on line %d:%d",
+			offset.lineno, offset.colno);
+		goto error;
+	}
 
 	unexpected_char: {
 		json5_tokenizer_set_error (tknzr, "Unexpected character '\\u%04x' on line %d:%d",

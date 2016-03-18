@@ -38,11 +38,9 @@ typedef struct {
 } json5_parser_item;
 
 typedef struct {
-	int state;
 	json5_parser_item * stack;
 	size_t stack_len;
 	size_t stack_cap;
-	json5_value obj_key;
 	json5_value value;
 	json5_value error;
 } json5_parser;

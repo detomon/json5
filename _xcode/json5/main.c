@@ -4,6 +4,7 @@
 #include "json5-value.h"
 #include "json5-writer.h"
 #include "json5-tokenizer.h"
+#include "json5-parser.h"
 
 /*static void print_value (json5_value * value, int indent) {
 	char ind [10];
@@ -77,6 +78,8 @@
 	}
 }*/
 
+static json5_parser parser;
+
 static int write_json (uint8_t const * string, size_t size, void * info) {
 	fwrite (string, 1, size, stdout);
 
@@ -109,6 +112,18 @@ static int put_tokens (json5_token const * token, void * arg) {
 			printf (">> :\n");
 			break;
 		}
+		case JSON5_TOK_NAN: {
+			printf (">> NaN\n");
+			break;
+		}
+		case JSON5_TOK_INFINITY: {
+			printf (">> %cInfinity\n", token -> value.i > 0 ? '+' : '-');
+			break;
+		}
+		case JSON5_TOK_NULL: {
+			printf (">> null\n");
+			break;
+		}
 		case JSON5_TOK_STRING: {
 			printf (">> str: \"%s\"\n", token -> token);
 			break;
@@ -119,6 +134,10 @@ static int put_tokens (json5_token const * token, void * arg) {
 		}
 		case JSON5_TOK_NUMBER_FLOAT: {
 			printf (">> f: %lf\n", token -> value.f);
+			break;
+		}
+		case JSON5_TOK_NUMBER_BOOL: {
+			printf (">> b: %lld\n", token -> value.i);
 			break;
 		}
 		case JSON5_TOK_NAME: {
@@ -138,8 +157,7 @@ static int put_tokens (json5_token const * token, void * arg) {
 		}
 	}
 
-
-	return 0;
+	return json5_parser_put_tokens (&parser, token, 1);
 }
 
 int main (int argc, const char * argv []) {
@@ -190,7 +208,7 @@ int main (int argc, const char * argv []) {
 
 	print_value (&obj, 0);*/
 
-	json5_value value;
+	/*json5_value value;
 	json5_value * item, * item2;
 
 	json5_value_set_object (&value);
@@ -237,17 +255,19 @@ int main (int argc, const char * argv []) {
 	item = json5_value_append_item (item2);
 	json5_value_set_string (item, "\"\n", 2);
 
-	/*assert (json5_value_delete_prop (&value, "akey34", 6) == 1);
-	assert (value.val.obj.len == 1);
+	//assert (json5_value_delete_prop (&value, "akey34", 6) == 1);
+	//assert (value.val.obj.len == 1);
 
-	assert (json5_value_delete_prop (&value, "somkey44", 8) == 1);
-	assert (value.val.obj.len == 0);*/
-
+	//assert (json5_value_delete_prop (&value, "somkey44", 8) == 1);
+	//assert (value.val.obj.len == 0);
 
 	json5_writer writer;
 	json5_writer_init (&writer, JSON5_WRITER_FLAG_NO_ESCAPE, write_json, NULL);
 
-	json5_writer_write (&writer, &value);
+	json5_writer_write (&writer, &value);*/
+
+	json5_parser_init (&parser);
+
 
 	printf ("\n\n");
 
@@ -256,13 +276,22 @@ int main (int argc, const char * argv []) {
 	json5_tokenizer_init (&tknzr);
 
 	//char const * string = "{'bla':\"key\\x40\",e:1e-2,}";
-	char const * string = "-NaN, {, ᛮtⅧ: 'aöäü', [-4.e-5, -0xfff.6]}";
+	//char const * string = "{e: -NaN, ᛮtⅧ: 'aöäü', [-4.e-5, -0xfff.6]}";
+	//char const * string = "{ r: { a: true }}";
+	char const * string = "[[3]]";
 	size_t size = strlen (string);
 	json5_tokenizer_put_chars (&tknzr, (uint8_t *) string, size, put_tokens, NULL);
 
 	json5_tokenizer_put_chars (&tknzr, (uint8_t *) "", 0, put_tokens, NULL);
 
 	printf ("\n!! %s\n", tknzr.buffer);
+	printf ("\n!! %s\n", (char *) parser.error.str.s);
+
+	json5_writer writer;
+	json5_writer_init (&writer, JSON5_WRITER_FLAG_NO_ESCAPE, write_json, NULL);
+
+	json5_writer_write (&writer, &parser.value);
+
 
 	return 0;
 }

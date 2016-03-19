@@ -1190,8 +1190,12 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	}
 
 	unexpected_char: {
-		if (char_type == JSON5_STATE_END) {
+		if (char_type == JSON5_TOK_END) {
 			json5_tokenizer_set_error (tknzr, "Premature end of file");
+		}
+		else if (char_type == JSON5_TOK_LINEBREAK) {
+			json5_tokenizer_set_error (tknzr, "Unexpected linebreak on line %d:%d",
+				offset.lineno + 1, offset.colno);
 		}
 		else if (c >= ' ' && c < 127) {
 			json5_tokenizer_set_error (tknzr, "Invalid character '%c' on line %d:%d",
@@ -1212,12 +1216,19 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	}
 
 	invalid_hex_char: {
-		if (c >= ' ' && c < 127) {
+		if (char_type == JSON5_TOK_END) {
+			json5_tokenizer_set_error (tknzr, "Premature end of hex sequence");
+		}
+		else if (char_type == JSON5_TOK_LINEBREAK) {
+			json5_tokenizer_set_error (tknzr, "Unexpected linebreak on line %d:%d",
+				offset.lineno + 1, offset.colno);
+		}
+		else if (c >= ' ' && c < 127) {
 			json5_tokenizer_set_error (tknzr, "Invalid hex character '%c' on line %d:%d",
 				c, offset.lineno + 1, offset.colno);
 		}
 		else {
-			json5_tokenizer_set_error (tknzr, "Invalid hex character '\\x%02x' on line %d:%d",
+			json5_tokenizer_set_error (tknzr, "Invalid hex character '\\u%04x' on line %d:%d",
 				c, offset.lineno + 1, offset.colno);
 		}
 
@@ -1225,7 +1236,14 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	}
 
 	invalid_byte: {
-		if (c >= ' ' && c < 127) {
+		if (char_type == JSON5_TOK_END) {
+			json5_tokenizer_set_error (tknzr, "Premature end of Unicode sequence");
+		}
+		else if (char_type == JSON5_TOK_LINEBREAK) {
+			json5_tokenizer_set_error (tknzr, "Unexpected linebreak on line %d:%d",
+				offset.lineno + 1, offset.colno);
+		}
+		else if (c >= ' ' && c < 127) {
 			json5_tokenizer_set_error (tknzr, "Invalid character '%c' for Unicode sequence on line %d:%d",
 				c, offset.lineno + 1, offset.colno);
 		}

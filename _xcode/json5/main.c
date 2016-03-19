@@ -276,9 +276,36 @@ int main (int argc, const char * argv []) {
 	json5_tokenizer_init (&tknzr);
 
 	//char const * string = "{'bla':\"key\\x40\",e:1e-2,}";
-	//char const * string = "{e: -NaN, ᛮtⅧ: 'aöäü', [-4.e-5, -0xfff.6]}";
+	//char const * string = "{e: -NaN, ᛮtⅧ: 'aöäü', undefined: [-4.e-5, -0xfff, .6]}";
+
+	char const * string = "{\n"
+	"foo: 'bar',\n"
+	"while: true,\n"
+"\n"
+"		this: 'is a \\\n"
+"		multi-line string',\n"
+"\n"
+"		// this is an inline comment\n"
+"		here: 'is another', // inline comment\n"
+"\n"
+"	/* this is a block comment\n"
+"	 that continues on another line */\n"
+"\n"
+"		hex: 0xDEADbeef,\n"
+"		half: .5,\n"
+"		delta: +10,\n"
+"		to: Infinity,   // and beyond!\n"
+"\n"
+"		finally: 'a trailing comma',\n"
+"		oh: [\n"
+"			 \"we shouldn't forget\",\n"
+"			 'arrays can have',\n"
+"			 'trailing commas too',\n"
+"   ],\n"
+"}\n";
+
 	//char const * string = "{ r: { a: true }}";
-	char const * string = "[[3]]";
+	//char const * string = "{b: [4]}";
 	size_t size = strlen (string);
 	json5_tokenizer_put_chars (&tknzr, (uint8_t *) string, size, put_tokens, NULL);
 

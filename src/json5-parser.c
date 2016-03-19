@@ -242,7 +242,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 					}
 					default: {
 						json5_parser_set_error (parser, "Extra token in root context on line %d:%d",
-							token -> offset.lineno, token -> offset.colno);
+							token -> offset.lineno + 1, token -> offset.colno);
 						goto error;
 						break;
 					}
@@ -529,7 +529,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 		}
 		else {
 			json5_parser_set_error (parser, "Unexpected token on line %d:%d",
-				token -> offset.lineno, token -> offset.colno);
+				token -> offset.lineno + 1, token -> offset.colno);
 		}
 
 		json5_parser_stack_top (parser) -> state = JSON5_STATE_ERROR;

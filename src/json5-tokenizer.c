@@ -1185,7 +1185,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 
 	invalid_token: {
 		json5_tokenizer_set_error (tknzr, "Invalid token on line %d:%d",
-			offset.lineno, offset.colno);
+			offset.lineno + 1, offset.colno);
 		goto error;
 	}
 
@@ -1193,9 +1193,13 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 		if (char_type == JSON5_STATE_END) {
 			json5_tokenizer_set_error (tknzr, "Premature end of file");
 		}
+		else if (c >= ' ' && c < 127) {
+			json5_tokenizer_set_error (tknzr, "Invalid character '%c' on line %d:%d",
+				c, offset.lineno + 1, offset.colno);
+		}
 		else {
 			json5_tokenizer_set_error (tknzr, "Unexpected character '\\u%04x' on line %d:%d",
-				c, offset.lineno, offset.colno);
+				c, offset.lineno + 1, offset.colno);
 		}
 
 		goto error;
@@ -1203,18 +1207,18 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 
 	unexpected_end_starting: {
 		json5_tokenizer_set_error (tknzr, "Premature end of file for string starting at %d:%d",
-			tknzr -> token.offset.lineno, tknzr -> token.offset.colno);
+			tknzr -> token.offset.lineno + 1, tknzr -> token.offset.colno);
 		goto error;
 	}
 
 	invalid_hex_char: {
 		if (c >= ' ' && c < 127) {
 			json5_tokenizer_set_error (tknzr, "Invalid hex character '%c' on line %d:%d",
-				c, offset.lineno, offset.colno);
+				c, offset.lineno + 1, offset.colno);
 		}
 		else {
 			json5_tokenizer_set_error (tknzr, "Invalid hex character '\\x%02x' on line %d:%d",
-				c, offset.lineno, offset.colno);
+				c, offset.lineno + 1, offset.colno);
 		}
 
 		goto error;
@@ -1223,11 +1227,11 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	invalid_byte: {
 		if (c >= ' ' && c < 127) {
 			json5_tokenizer_set_error (tknzr, "Invalid character '%c' for Unicode sequence on line %d:%d",
-				c, offset.lineno, offset.colno);
+				c, offset.lineno + 1, offset.colno);
 		}
 		else {
 			json5_tokenizer_set_error (tknzr, "Invalid byte '\\x%02x' for Unicode sequence on line %d:%d",
-				c, offset.lineno, offset.colno);
+				c, offset.lineno + 1, offset.colno);
 		}
 
 		goto error;

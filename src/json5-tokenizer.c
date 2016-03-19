@@ -61,6 +61,8 @@ typedef enum {
 	JSON5_STATE_STRING_ESCAPE,  // '\'
 	JSON5_STATE_STRING_HEXCHAR, // 'x'
 	JSON5_STATE_STRING_HEXCHAR_BEGIN, // 'x'
+	JSON5_STATE_STRING_MULTILINE,
+	JSON5_STATE_STRING_MULTILINE_END,
 	JSON5_STATE_NUMBER,
 	JSON5_STATE_NUMBER_SIGN,
 	JSON5_STATE_NUMBER_START,
@@ -692,6 +694,12 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							goto unexpected_end_starting;
 							break;
 						}
+						case JSON5_TOK_SPACE:
+						case JSON5_TOK_LINEBREAK: {
+							state = JSON5_STATE_STRING_MULTILINE;
+							again = 1;
+							break;
+						}
 						default: {
 							state = JSON5_STATE_STRING;
 
@@ -715,6 +723,29 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 									}
 								}
 							}
+							break;
+						}
+					}
+					break;
+				}
+				case JSON5_STATE_STRING_MULTILINE: {
+					switch (char_type) {
+						case JSON5_TOK_SPACE: {
+							break;
+						}
+						case JSON5_TOK_LINEBREAK: {
+							// read until linebreak, but ignore '\r'
+							if (c != '\r') {
+								state = JSON5_STATE_STRING_MULTILINE_END;
+							}
+							break;
+						}
+						case JSON5_TOK_END: {
+							goto unexpected_end;
+							break;
+						}
+						default: {
+							goto unexpected_char;
 							break;
 						}
 					}
@@ -1029,6 +1060,10 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 					else {
 						json5_tokenizer_put_char (tknzr, c);
 					}
+					break;
+				}
+				case JSON5_STATE_STRING_MULTILINE_END: {
+					state = JSON5_STATE_STRING;
 					break;
 				}
 				case JSON5_STATE_NUMBER:

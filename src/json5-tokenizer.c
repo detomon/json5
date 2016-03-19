@@ -224,6 +224,33 @@ static void json5_tokenizer_put_char (json5_tokenizer * tknzr, int c) {
 	tknzr -> buffer [tknzr -> buffer_len ++] = c;
 }
 
+static void json5_tokenizer_put_mb_char (json5_tokenizer * tknzr, unsigned c) {
+	redo:
+
+	if (c < 0x80) {
+		tknzr -> buffer [tknzr -> buffer_len ++] = c;
+	}
+	else if (c < 0x800) {
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0xC0 | (c >> 6);
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0x80 | (c & 0x3F);
+	}
+	else if (c < 0x10000) {
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0xE0 | (c >> 12);
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0x80 | ((c >> 6) & 0x3F);
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0x80 | (c & 0x3F);
+	}
+	else if (c <= JSON5_UT_MAX_VALUE) {
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0xF0 | (c >> 18);
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0x80 | ((c >> 12) & 0x3F);
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0x80 | ((c >> 6) & 0x3F);
+		tknzr -> buffer [tknzr -> buffer_len ++] = 0x80 | (c & 0x3F);
+	}
+	else { // invalid rune
+		c = 0xFFFD;
+		goto redo;
+	}
+}
+
 static void json5_tokenizer_put_mb_chars (json5_tokenizer * tknzr) {
 	memcpy (&tknzr -> buffer [tknzr -> buffer_len], tknzr -> mb_char.chars, tknzr -> mb_char.length);
 	tknzr -> buffer_len += tknzr -> mb_char.length;
@@ -751,7 +778,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 				case JSON5_STATE_STRING_HEXCHAR_BEGIN: {
 					if (c < 128) {
 						if (char_types [c].hex) {
-							c = char_types [c].hex & HEX_VAL_MASK;
+							value = char_types [c].hex & HEX_VAL_MASK;
 						}
 						else {
 							goto invalid_hex_char;
@@ -1102,7 +1129,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 					if (-- tknzr -> aux_count == 0) {
 						value = tknzr -> seq_value;
 						state = JSON5_STATE_STRING;
-						json5_tokenizer_put_char (tknzr, value);
+						json5_tokenizer_put_mb_char (tknzr, value);
 					}
 					break;
 				}

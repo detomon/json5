@@ -296,7 +296,7 @@ int main (int argc, const char * argv []) {
 "		hex: 0xDEADbeef,\n"
 "		half: .5,\n"
 "		delta: +10,\n"
-"		to: -NaN+4,   // and beyond!\n"
+"		to: -NaN,   // and beyond!\n"
 "\n"
 "		finally: 'a trailing comma',\n"
 "		oh: [\n"

@@ -218,7 +218,6 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 					case JSON5_TOK_NULL:
 					case JSON5_TOK_NAN:
 					case JSON5_TOK_INFINITY: {
-						item -> state = JSON5_STATE_VALUE;
 						break;
 					}
 					default: {
@@ -241,9 +240,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 						break;
 					}
 					default: {
-						json5_parser_set_error (parser, "Extra token in root context on line %d:%d",
-							token -> offset.lineno + 1, token -> offset.colno);
-						goto error;
+						goto extra_token;
 						break;
 					}
 				}
@@ -539,6 +536,12 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 	alloc_error: {
 		json5_parser_set_error (parser, "Allocation error");
 		json5_parser_stack_top (parser) -> state = JSON5_STATE_ERROR;
+		goto error;
+	}
+
+	extra_token: {
+		json5_parser_set_error (parser, "Extra token in root context on line %d:%d",
+			token -> offset.lineno + 1, token -> offset.colno);
 		goto error;
 	}
 

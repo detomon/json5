@@ -389,14 +389,14 @@ static void json5_tokenizer_number_end (json5_tokenizer * tknzr) {
 }
 
 static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t const * chars, size_t size, json5_put_token_func put_token, void * arg) {
-	int c;
-	int state;
+	int c = 0;
+	int state = 0;
 	int value = 0;
 	int res = 0;
 	int accept;
 	int again;
 	json5_off offset;
-	json5_tok_type char_type;
+	json5_tok_type char_type = 0;
 	json5_token * token;
 	json5_ut_info const * info = NULL;
 	uint8_t const * end = &chars [size];
@@ -416,7 +416,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	do {
 		if (tknzr -> mb_char.count) {
 			if (size == 0) {
-				goto unexpected_end;
+				goto unexpected_char;
 			}
 			else if (chars >= end) {
 				break;
@@ -740,10 +740,6 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							}
 							break;
 						}
-						case JSON5_TOK_END: {
-							goto unexpected_end;
-							break;
-						}
 						default: {
 							goto unexpected_char;
 							break;
@@ -778,10 +774,6 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							state = JSON5_STATE_NUMBER_PERIOD;
 							break;
 						}
-						case JSON5_TOK_END: {
-							goto unexpected_end;
-							break;
-						}
 						default: {
 							goto unexpected_char;
 							break;
@@ -805,10 +797,6 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							token -> type = JSON5_TOK_NAME_SIGN;
 							token -> value.i = tknzr -> number.sign;
 							state = JSON5_STATE_NAME_SIGN;
-							break;
-						}
-						case JSON5_TOK_END: {
-							goto unexpected_end;
 							break;
 						}
 						default: {
@@ -873,7 +861,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							break;
 						}
 						case JSON5_TOK_END: {
-							goto unexpected_end;
+							goto unexpected_char;
 							break;
 						}
 						default: {
@@ -916,10 +904,6 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							}
 							break;
 						}
-						case JSON5_TOK_END: {
-							goto unexpected_end;
-							break;
-						}
 						default: {
 							goto invalid_hex_char;
 							break;
@@ -955,12 +939,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 						}
 						default: {
 							if (!tknzr -> number.exp_len) {
-								if (char_type == JSON5_TOK_END) {
-									goto unexpected_end;
-								}
-								else {
-									goto unexpected_char;
-								}
+								goto unexpected_char;
 							}
 
 							state = JSON5_STATE_NUMBER_DONE;
@@ -998,10 +977,6 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							state = JSON5_STATE_COMMENT_ML;
 							break;
 						}
-						case JSON5_TOK_END: {
-							goto unexpected_end;
-							break;
-						}
 						default: {
 							goto unexpected_char;
 							break;
@@ -1016,7 +991,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							break;
 						}
 						case JSON5_TOK_END: {
-							goto unexpected_end;
+							goto unexpected_char;
 							break;
 						}
 						default: {
@@ -1215,13 +1190,14 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	}
 
 	unexpected_char: {
-		json5_tokenizer_set_error (tknzr, "Unexpected character '\\u%04x' on line %d:%d",
-			c, offset.lineno, offset.colno);
-		goto error;
-	}
+		if (char_type == JSON5_STATE_END) {
+			json5_tokenizer_set_error (tknzr, "Premature end of file");
+		}
+		else {
+			json5_tokenizer_set_error (tknzr, "Unexpected character '\\u%04x' on line %d:%d",
+				c, offset.lineno, offset.colno);
+		}
 
-	unexpected_end: {
-		json5_tokenizer_set_error (tknzr, "Premature end of file");
 		goto error;
 	}
 
@@ -1232,14 +1208,28 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	}
 
 	invalid_hex_char: {
-		json5_tokenizer_set_error (tknzr, "Invalid hex character '\\x%02x' on line %d:%d",
-			c, offset.lineno, offset.colno);
+		if (c >= ' ' && c < 127) {
+			json5_tokenizer_set_error (tknzr, "Invalid hex character '%c' on line %d:%d",
+				c, offset.lineno, offset.colno);
+		}
+		else {
+			json5_tokenizer_set_error (tknzr, "Invalid hex character '\\x%02x' on line %d:%d",
+				c, offset.lineno, offset.colno);
+		}
+
 		goto error;
 	}
 
 	invalid_byte: {
-		json5_tokenizer_set_error (tknzr, "Invalid byte '\\x%02x' on line %d:%d",
-			c, offset.lineno, offset.colno);
+		if (c >= ' ' && c < 127) {
+			json5_tokenizer_set_error (tknzr, "Invalid character '%c' for Unicode sequence on line %d:%d",
+				c, offset.lineno, offset.colno);
+		}
+		else {
+			json5_tokenizer_set_error (tknzr, "Invalid byte '\\x%02x' for Unicode sequence on line %d:%d",
+				c, offset.lineno, offset.colno);
+		}
+
 		goto error;
 	}
 

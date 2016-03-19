@@ -238,7 +238,7 @@ static int json5_writer_write_number (json5_writer * writer, json5_value const *
 			break;
 		}
 		case JSON5_TYPE_FLOAT: {
-			snprintf ((char *) number, sizeof (number), "%.17g", value -> num.f);
+			snprintf ((char *) number, sizeof (number), "%.15g", value -> num.f);
 			break;
 		}
 		case JSON5_TYPE_BOOL: {

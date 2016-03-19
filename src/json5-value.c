@@ -347,3 +347,39 @@ int json5_value_delete_prop (json5_value * value, char const * key, size_t key_l
 
 	return 0;
 }
+
+int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * value) {
+	if (value -> type != JSON5_TYPE_OBJECT) {
+		return -1;
+	}
+
+	itor -> obj = value;
+	itor -> prop = value -> obj.itms;
+
+	return 0;
+}
+
+int json5_obj_itor_next (json5_obj_itor * itor, char const ** out_key, size_t * out_key_len, json5_value ** out_value) {
+	json5_obj_prop const * end = &itor -> obj -> obj.itms [itor -> obj -> obj.cap];
+
+	if (itor -> prop >= end) {
+		return 0;
+	}
+
+	do {
+		if (itor -> prop -> key > PLACEHOLDER_KEY) {
+			*out_value = &itor -> prop -> value;
+			*out_key = itor -> prop -> key;
+			*out_key_len = itor -> prop -> key_len;
+
+			itor -> prop ++;
+
+			return 1;
+		}
+
+		itor -> prop ++;
+	}
+	while (itor -> prop < end);
+
+	return 0;
+}

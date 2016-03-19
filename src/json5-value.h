@@ -37,6 +37,7 @@ typedef enum json5_type json5_type;
 typedef enum json5_subtype json5_subtype;
 typedef struct json5_value json5_value;
 typedef struct json5_obj_prop json5_obj_prop;
+typedef struct json5_obj_itor json5_obj_itor;
 typedef uint64_t json5_hash;
 
 /**
@@ -90,6 +91,14 @@ struct json5_obj_prop {
 	char * key;
 	size_t key_len;
 	json5_value value;
+};
+
+/**
+ * Defined an object iterator
+ */
+struct json5_obj_itor {
+	json5_value const * obj;
+	json5_obj_prop * prop;
 };
 
 /**
@@ -193,3 +202,17 @@ extern json5_value * json5_value_set_prop (json5_value * value, char const * key
  * Returns 0 if no property with given key is found or `value` is not an object.
  */
 extern int json5_value_delete_prop (json5_value * value, char const * key, size_t key_len);
+
+/**
+ * Initialize object iterator
+ *
+ * Reutn -1 if value is not an object
+ */
+extern int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * value);
+
+/**
+ * Get next object key and value
+ *
+ * Return 1 while values are available
+ */
+extern int json5_obj_itor_next (json5_obj_itor * itor, char const ** out_key, size_t * out_key_len, json5_value ** out_value);

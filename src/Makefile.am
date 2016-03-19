@@ -9,6 +9,8 @@ lib_LIBRARIES = libjson5.a
 
 libjson5_a_SOURCES = \
 	json5.c \
+	json5-coder.c \
+	json5-parser.c \
 	json5-tokenizer.c \
 	json5-value.c \
 	json5-writer.c
@@ -17,6 +19,8 @@ libjson5_a_LIBADD = $(srcdir)/../unicode-table/src/libunicodetable.a
 
 pkginclude_HEADERS = \
 	json5.h \
+	json5-coder.h \
+	json5-parser.h \
 	json5-tokenizer.h \
 	json5-value.h \
 	json5-writer.h

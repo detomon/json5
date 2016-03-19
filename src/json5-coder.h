@@ -21,12 +21,26 @@
  * IN THE SOFTWARE.
  */
 
-#include "json5.h"
+#pragma once
 
-int json5_encode (json5_value * value, char const ** out_string, size_t * out_size) {
-	return 0;
-}
+#include "json5-parser.h"
 
-int json5_decode (char const * string, size_t size, json5_value * out_value) {
-	return 0;
-}
+typedef struct {
+	json5_tokenizer tknzr;
+	json5_parser parser;
+} json5_coder;
+
+/**
+ * Initialize a coder object
+ */
+extern int json5_coder_init (json5_coder * coder);
+
+/**
+ * Destroy a coder object
+ */
+extern void json5_coder_destroy (json5_coder * coder);
+
+/**
+ * Decode a JSON string
+ */
+extern int json5_coder_decode (json5_coder * coder, uint8_t const * string, size_t size, json5_value * out_value);

@@ -1,10 +1,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "json5-value.h"
-#include "json5-writer.h"
-#include "json5-tokenizer.h"
-#include "json5-parser.h"
+#include <time.h>
+#include "json5.h"
 
 /*static void print_value (json5_value * value, int indent) {
 	char ind [10];
@@ -87,7 +85,7 @@ static int write_json (uint8_t const * string, size_t size, void * info) {
 }
 
 static int put_tokens (json5_token const * token, void * arg) {
-	switch (token -> type) {
+	/*switch (token -> type) {
 		case JSON5_TOK_OBJ_OPEN: {
 			printf (">> {\n");
 			break;
@@ -155,12 +153,14 @@ static int put_tokens (json5_token const * token, void * arg) {
 		default: {
 			break;
 		}
-	}
+	}*/
 
 	return json5_parser_put_tokens (&parser, token, 1);
 }
 
 int main (int argc, const char * argv []) {
+	clock_t c;
+
 	/*json5_value arr;
 	json5_value obj;
 	json5_value * item, * item2;
@@ -266,6 +266,8 @@ int main (int argc, const char * argv []) {
 
 	json5_writer_write (&writer, &value);*/
 
+	c = clock ();
+
 	json5_parser_init (&parser);
 
 
@@ -294,7 +296,7 @@ int main (int argc, const char * argv []) {
 "		hex: 0xDEADbeef,\n"
 "		half: .5,\n"
 "		delta: +10,\n"
-"		to: Infinity,   // and beyond!\n"
+"		to: -NaN+4,   // and beyond!\n"
 "\n"
 "		finally: 'a trailing comma',\n"
 "		oh: [\n"
@@ -304,20 +306,87 @@ int main (int argc, const char * argv []) {
 "   ],\n"
 "}\n";
 
-	//char const * string = "{ r: { a: true }}";
-	//char const * string = "{b: [4]}";
-	size_t size = strlen (string);
-	json5_tokenizer_put_chars (&tknzr, (uint8_t *) string, size, put_tokens, NULL);
+//	char const * string = "// This file is written in JSON5 syntax, naturally, but npm needs a regular\n"
+//	"// JSON file, so compile via `npm run build`. Be sure to keep both in sync!\n"
+//	"\n"
+//	"{\n"
+//	"    name: 'json5',\n"
+//	"    version: '0.4.0',\n"
+//	"    description: 'JSON for the ES5 era.',\n"
+//	"    keywords: ['json', 'es5'],\n"
+//	"    author: 'Aseem Kishore <aseem.kishore@gmail.com>',\n"
+//	"    contributors: [\n"
+//	"        // TODO: Should we remove this section in favor of GitHub's list?\n"
+//	"        // https://github.com/aseemk/json5/contributors\n"
+//	"        'Max Nanasy <max.nanasy@gmail.com>',\n"
+//	"        'Andrew Eisenberg <andrew@eisenberg.as>',\n"
+//	"        'Jordan Tucker <jordanbtucker@gmail.com>',\n"
+//	"    ],\n"
+//	"    main: 'lib/json5.js',\n"
+//	"    bin: 'lib/cli.js',\n"
+//	"    dependencies: {},\n"
+//	"    devDependencies: {\n"
+//	"        mocha: '~1.0.3',    // TODO: Look into Mocha v2.\n"
+//	"    },\n"
+//	"    scripts: {\n"
+//	"        build: './lib/cli.js -c package.json5',\n"
+//	"        test: 'mocha --ui exports --reporter spec',\n"
+//	"            // TODO: Would it be better to define these in a mocha.opts file?\n"
+//	"    },\n"
+//	"    homepage: 'http://json5.org/',\n"
+//	"    license: 'MIT',\n"
+//	"    repository: {\n"
+//	"        type: 'git',\n"
+//	"        url: 'https://github.com/aseemk/json5.git',\n"
+//	"    },\n"
+//	"}\n";
 
-	json5_tokenizer_put_chars (&tknzr, (uint8_t *) "", 0, put_tokens, NULL);
+//string = "[5, [5, -0xEF, {a: 4, Ô∏:456}]]";
 
-	printf ("\n!! %s\n", tknzr.buffer);
-	printf ("\n!! %s\n", (char *) parser.error.str.s);
+	json5_coder coder;
+	json5_value value;
+
+	json5_value_init (&value);
+	json5_coder_init (&coder);
+
+	int res = json5_coder_decode (&coder, (uint8_t *) string, strlen (string), &value);
+
+	if (res != 0) {
+		printf ("\n!! %s\n", (char *) coder.tknzr.buffer);
+		printf ("\n!! %s\n", (char *) coder.parser.error.str.s);
+	}
+
+	// check error!!!
+
+	json5_coder_destroy (&coder);
 
 	json5_writer writer;
 	json5_writer_init (&writer, JSON5_WRITER_FLAG_NO_ESCAPE, write_json, NULL);
 
-	json5_writer_write (&writer, &parser.value);
+	json5_writer_write (&writer, &value);
+
+	json5_writer_destroy (&writer);
+
+	//printf ("\n!! %s\n", tknzr.buffer);
+	//printf ("\n!! %s\n", (char *) parser.error.str.s);
+
+
+//	//char const * string = "{ r: { a: true }}";
+//	//char const * string = "{b: [4]}";
+//	size_t size = strlen (string);
+//	json5_tokenizer_put_chars (&tknzr, (uint8_t *) string, size, put_tokens, NULL);
+//
+//	json5_tokenizer_put_chars (&tknzr, (uint8_t *) "", 0, put_tokens, NULL);
+//
+//	printf ("\n\n*** %lf sec\n\n", (double) (clock () - c) / CLOCKS_PER_SEC);
+//
+//	printf ("\n!! %s\n", tknzr.buffer);
+//	printf ("\n!! %s\n", (char *) parser.error.str.s);
+//
+//	json5_writer writer;
+//	json5_writer_init (&writer, JSON5_WRITER_FLAG_NO_ESCAPE, write_json, NULL);
+//
+//	json5_writer_write (&writer, &parser.value);
 
 
 	return 0;

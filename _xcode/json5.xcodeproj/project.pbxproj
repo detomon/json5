@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F400DB421C9D6A09001BD317 /* json5-coder.c in Sources */ = {isa = PBXBuildFile; fileRef = F400DB401C9D6A09001BD317 /* json5-coder.c */; };
 		F466AD6C1C95642400D4D738 /* json5-tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD5C1C95642400D4D738 /* json5-tokenizer.c */; };
 		F466AD6E1C95642400D4D738 /* json5-value.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD5F1C95642400D4D738 /* json5-value.c */; };
 		F466AD701C95642400D4D738 /* json5-writer.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD621C95642400D4D738 /* json5-writer.c */; };
-		F466AD721C95642400D4D738 /* json5.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD651C95642400D4D738 /* json5.c */; };
 		F466AD891C95646A00D4D738 /* unicode-table.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD811C95646A00D4D738 /* unicode-table.c */; };
 		F466AD8C1C9564C500D4D738 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F466AD8B1C9564C500D4D738 /* main.c */; };
 		F4FB9DAC1C999001008FB70C /* json5-parser.c in Sources */ = {isa = PBXBuildFile; fileRef = F4FB9DAA1C999001008FB70C /* json5-parser.c */; };
@@ -29,6 +29,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F400DB401C9D6A09001BD317 /* json5-coder.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "json5-coder.c"; sourceTree = "<group>"; };
+		F400DB411C9D6A09001BD317 /* json5-coder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "json5-coder.h"; sourceTree = "<group>"; };
 		F4536FE71C0732B3001D408E /* json5 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = json5; sourceTree = BUILT_PRODUCTS_DIR; };
 		F466AD5C1C95642400D4D738 /* json5-tokenizer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "json5-tokenizer.c"; sourceTree = "<group>"; };
 		F466AD5D1C95642400D4D738 /* json5-tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "json5-tokenizer.h"; sourceTree = "<group>"; };
@@ -36,7 +38,6 @@
 		F466AD601C95642400D4D738 /* json5-value.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "json5-value.h"; sourceTree = "<group>"; };
 		F466AD621C95642400D4D738 /* json5-writer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "json5-writer.c"; sourceTree = "<group>"; };
 		F466AD631C95642400D4D738 /* json5-writer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "json5-writer.h"; sourceTree = "<group>"; };
-		F466AD651C95642400D4D738 /* json5.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = json5.c; sourceTree = "<group>"; };
 		F466AD661C95642400D4D738 /* json5.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = json5.h; sourceTree = "<group>"; };
 		F466AD7B1C95646A00D4D738 /* generate.pl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; path = generate.pl; sourceTree = "<group>"; };
 		F466AD801C95646A00D4D738 /* SpecialCasing.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SpecialCasing.txt; sourceTree = "<group>"; };
@@ -90,7 +91,8 @@
 				F466AD601C95642400D4D738 /* json5-value.h */,
 				F466AD621C95642400D4D738 /* json5-writer.c */,
 				F466AD631C95642400D4D738 /* json5-writer.h */,
-				F466AD651C95642400D4D738 /* json5.c */,
+				F400DB401C9D6A09001BD317 /* json5-coder.c */,
+				F400DB411C9D6A09001BD317 /* json5-coder.h */,
 				F466AD661C95642400D4D738 /* json5.h */,
 			);
 			name = json5;
@@ -174,7 +176,7 @@
 				F466AD8C1C9564C500D4D738 /* main.c in Sources */,
 				F466AD701C95642400D4D738 /* json5-writer.c in Sources */,
 				F466AD6E1C95642400D4D738 /* json5-value.c in Sources */,
-				F466AD721C95642400D4D738 /* json5.c in Sources */,
+				F400DB421C9D6A09001BD317 /* json5-coder.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

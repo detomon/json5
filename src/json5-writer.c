@@ -251,7 +251,7 @@ static int json5_writer_write_number (json5_writer * writer, json5_value const *
 }
 
 static int json5_writer_write_infinity (json5_writer * writer, json5_value const * value) {
-	uint8_t const * string = (uint8_t const *) (value -> num.i > 0 ? "Infinity" : "-Infinity");
+	uint8_t const * string = (uint8_t const *) (value -> num.i >= 0 ? "Infinity" : "-Infinity");
 
 	return json5_writer_write_bytes (writer, (uint8_t const *) string, strlen ((void const *) string));
 }

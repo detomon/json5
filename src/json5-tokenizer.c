@@ -614,7 +614,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 						token = &tknzr -> token;
 						token -> type = char_type;
 						token -> token = &tknzr -> buffer [tknzr -> buffer_len];
-						token -> offset = tknzr -> offset;
+						token -> offset = offset;
 					}
 
 					break;
@@ -795,7 +795,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 						case JSON5_TOK_NAME: {
 							token = &tknzr -> token;
 							token -> type = JSON5_TOK_NAME_SIGN;
-							token -> value.i = tknzr -> number.sign;
+							token -> value.i = tknzr -> number.sign ? -1 : 0;
 							state = JSON5_STATE_NAME_SIGN;
 							break;
 						}
@@ -1249,7 +1249,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
  * Splits input chars into smaller chunks for better buffer usage
  */
 int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, size_t size, json5_put_token_func put_token, void * arg) {
-	int res;
+	int res = 0;
 	size_t chunk_size;
 	size_t const max_size = 1024;
 
@@ -1265,7 +1265,7 @@ int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, s
 	}
 	while (size);
 
-	return 0;
+	return res;
 }
 
 char const * json5_tokenizer_get_error (json5_tokenizer const * tknzr) {

@@ -8,7 +8,6 @@ $(BUILT_SOURCES):
 lib_LIBRARIES = libjson5.a
 
 libjson5_a_SOURCES = \
-	json5.c \
 	json5-coder.c \
 	json5-parser.c \
 	json5-tokenizer.c \

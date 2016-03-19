@@ -4,7 +4,7 @@
 AC_PREREQ([2.63])
 AC_INIT([json5], [0.1], [simon@monoxid.net], [json5], [https://github.com/detomon/json5])
 
-AC_CONFIG_SRCDIR([src/json5.c])
+AC_CONFIG_SRCDIR([src/json5-coder.c])
 AC_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])

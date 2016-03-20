@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 #include "php.h"
+#include "ext/standard/basic_functions.h"
 
 #include "json5.h"
 
@@ -11,19 +12,11 @@
 extern zend_module_entry json5_module_entry;
 #define phpext_json5_ptr &json5_module_entry
 
-#ifndef INFINITY
-#define INFINITY 1e999
-#endif
+static double double_pos_inf;
+static double double_neg_inf;
+static double double_nan;
 
-#ifndef NAN
-#define NAN 0
-#endif
-
-static double double_pos_inf = INFINITY;
-static double double_neg_inf = -INFINITY;
-static double double_nan = NAN;
-
-// declaration of a custom json5_decode()
+PHP_MINIT_FUNCTION(json5);
 PHP_FUNCTION(json5_decode);
 PHP_FUNCTION(json5_encode);
 
@@ -42,7 +35,7 @@ zend_module_entry json5_module_entry = {
 #endif
 	PHP_JSON5_EXTNAME,
 	json5_functions,
-	NULL, // name of the MINIT function or NULL if not applicable
+	PHP_MINIT(json5), // name of the MINIT function or NULL if not applicable
 	NULL, // name of the MSHUTDOWN function or NULL if not applicable
 	NULL, // name of the RINIT function or NULL if not applicable
 	NULL, // name of the RSHUTDOWN function or NULL if not applicable
@@ -54,6 +47,26 @@ zend_module_entry json5_module_entry = {
 };
 
 ZEND_GET_MODULE(json5)
+
+static uint32_t get_rand() {
+	return time(0) * getpid();
+}
+
+PHP_MINIT_FUNCTION(json5)
+{
+	uint64_t seed;
+
+	double_pos_inf = php_get_inf();
+	double_neg_inf = -double_pos_inf;
+	double_nan = php_get_nan();
+
+	seed = get_rand();
+	seed = (seed << 32) | get_rand();
+
+	json5_set_hash_seed(seed);
+
+	return SUCCESS;
+}
 
 #define FUNCTION_NAME "json5_decode"
 

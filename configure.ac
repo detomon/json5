@@ -59,6 +59,7 @@ AC_CONFIG_FILES([
 export UT_SYMBOL_PREFIX="json5_ut"
 export UT_SNAKE_CASE=1
 export UT_CATEGORIES="Lu,Ll,Lt,Lm,Lo,Nl,Nd,Mn,Mc,Zp,Zs"
+export UT_INCLUDE_INFO="flags,categories"
 
 AC_CONFIG_SUBDIRS([unicode-table])
 

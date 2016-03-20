@@ -96,7 +96,7 @@
 				F466AD661C95642400D4D738 /* json5.h */,
 			);
 			name = json5;
-			path = ../src;
+			path = ../../src;
 			sourceTree = "<group>";
 		};
 		F466AD781C95646A00D4D738 /* unicode-table */ = {
@@ -111,7 +111,7 @@
 				F466AD861C95646A00D4D738 /* UnicodeData.txt */,
 			);
 			name = "unicode-table";
-			path = "../unicode-table/src";
+			path = "../../unicode-table/src";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

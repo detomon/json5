@@ -216,3 +216,11 @@ extern int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * value
  * Return 1 while values are available
  */
 extern int json5_obj_itor_next (json5_obj_itor * itor, char const ** out_key, size_t * out_key_len, json5_value ** out_value);
+
+/**
+ * Sets the global hash table seed.
+ *
+ * To improve security, set this value to a random integer before creating
+ * any hash table. This is to prevent malicious hash collision attacks.
+ */
+extern void json5_set_hash_seed (json5_hash seed);

@@ -29,6 +29,8 @@
 #define OBJECT_MIN_CAP 8
 #define PLACEHOLDER_KEY ((char *) 1)
 
+static json5_hash hash_table_seed = 0XD4244CD25E94BDBBULL;
+
 static void json5_value_delete (json5_value * value, json5_type type);
 
 static void json5_value_delete_string (json5_value * value) {
@@ -187,7 +189,7 @@ json5_value * json5_value_append_item (json5_value * value) {
 }
 
 static json5_hash json5_get_hash (char const * key, size_t key_len) {
-	json5_hash hash = 0;
+	json5_hash hash = hash_table_seed;
 
 	for (size_t i = 0; i < key_len; i ++) {
 		hash = (hash * 100003) ^ key [i];
@@ -382,4 +384,9 @@ int json5_obj_itor_next (json5_obj_itor * itor, char const ** out_key, size_t * 
 	while (itor -> prop < end);
 
 	return 0;
+}
+
+void json5_set_hash_seed (json5_hash seed)
+{
+	hash_table_seed = seed;
 }

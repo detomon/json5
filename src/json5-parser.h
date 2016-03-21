@@ -32,6 +32,50 @@
 #include "json5-value.h"
 #include "json5-tokenizer.h"
 
+/**
+ * Defines parser callback functions
+ */
+typedef struct {
+	/**
+	 * The callback argument.
+	 */
+	void * arg;
+
+	/**
+	 * Begin a new array.
+	 */
+	int (*begin_arr) (json5_token const * token, void * arg);
+
+	/**
+	 * Begin a new object.
+	 */
+	int (*begin_obj) (json5_token const * token, void * arg);
+
+	/**
+	 * End an array or object.
+	 */
+	int (*end_container) (json5_token const * token, void * arg);
+
+	/**
+	 * Begin a new object key.
+	 *
+	 * Will be followed by `set_value`.
+	 */
+	int (*begin_key) (json5_token const * token, void * arg);
+
+	/**
+	 * Begin a new array index.
+	 *
+	 * Will be followed by `set_value`.
+	 */
+	int (*begin_index) (json5_token const * token, void * arg);
+
+	/**
+	 * Set a value.
+	 */
+	int (*set_value) (json5_token const * token, void * arg);
+} json5_parser_funcs;
+
 typedef struct {
 	int state;
 	json5_value * value;
@@ -41,6 +85,7 @@ typedef struct {
 	json5_parser_item * stack;
 	size_t stack_len;
 	size_t stack_cap;
+	json5_parser_funcs const * funcs;
 	json5_value value;
 	json5_value error;
 } json5_parser;

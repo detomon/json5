@@ -183,6 +183,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 	json5_token const * token = NULL;
 	json5_parser_item * item;
 	json5_value * value;
+	json5_parser_funcs const * funcs = parser -> funcs;
 
 	item = json5_parser_stack_top (parser);
 
@@ -252,8 +253,15 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 
 				switch (token -> type) {
 					case JSON5_TOK_ARR_OPEN: {
-						if (!(value = json5_value_append_item (item -> value))) {
-							goto alloc_error;
+						if (funcs) {
+							if (funcs -> begin_index (token, funcs -> arg) != 0) {
+								goto error;
+							}
+						}
+						else {
+							if (!(value = json5_value_append_item (item -> value))) {
+								goto alloc_error;
+							}
 						}
 
 						if (!(item = json5_parser_stack_push (parser))) {
@@ -271,8 +279,15 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 						break;
 					}
 					case JSON5_TOK_OBJ_OPEN: {
-						if (!(value = json5_value_append_item (item -> value))) {
-							goto alloc_error;
+						if (funcs) {
+							if (funcs -> begin_index (token, funcs -> arg) != 0) {
+								goto error;
+							}
+						}
+						else {
+							if (!(value = json5_value_append_item (item -> value))) {
+								goto alloc_error;
+							}
 						}
 
 						if (!(item = json5_parser_stack_push (parser))) {
@@ -300,8 +315,15 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 							goto alloc_error;
 						}
 
-						if (!(value = json5_value_append_item (item -> value))) {
-							goto alloc_error;
+						if (funcs) {
+							if (funcs -> begin_index (token, funcs -> arg) != 0) {
+								goto error;
+							}
+						}
+						else {
+							if (!(value = json5_value_append_item (item -> value))) {
+								goto alloc_error;
+							}
 						}
 
 						item -> state = JSON5_STATE_VALUE;
@@ -347,8 +369,15 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 					case JSON5_TOK_NULL:
 					case JSON5_TOK_NAN:
 					case JSON5_TOK_INFINITY: {
-						if (!(value = json5_value_set_prop (item -> value, (char *) token -> token, token -> length))) {
-							goto alloc_error;
+						if (funcs) {
+							if (funcs -> begin_key (token, funcs -> arg) != 0) {
+								goto error;
+							}
+						}
+						else {
+							if (!(value = json5_value_set_prop (item -> value, (char *) token -> token, token -> length))) {
+								goto alloc_error;
+							}
 						}
 
 						if (!(item = json5_parser_stack_push (parser))) {
@@ -459,45 +488,52 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 		// state actions
 		switch (item -> state) {
 			case JSON5_STATE_VALUE: {
-				switch (token -> type) {
-					case JSON5_TOK_STRING: {
-						json5_value_set_string (item -> value, (char *) token -> token, token -> length);
-						break;
+				if (funcs) {
+					if (funcs -> set_value (token, funcs -> arg) != 0) {
+						goto error;
 					}
-					case JSON5_TOK_NUMBER: {
-						json5_value_set_int (item -> value, token -> value.i);
-						break;
-					}
-					case JSON5_TOK_NUMBER_FLOAT: {
-						json5_value_set_float (item -> value, token -> value.f);
-						break;
-					}
-					case JSON5_TOK_NUMBER_BOOL: {
-						json5_value_set_bool (item -> value, token -> value.i != 0);
-						break;
-					}
-					case JSON5_TOK_NULL: {
-						json5_value_set_null (item -> value);
-						break;
-					}
-					case JSON5_TOK_NAN: {
-						json5_value_set_nan (item -> value);
-						break;
-					}
-					case JSON5_TOK_INFINITY: {
-						json5_value_set_infinity (item -> value, (int) token -> value.i);
-						break;
-					}
-					case JSON5_TOK_ARR_OPEN: {
-						json5_value_set_array (item -> value);
-						break;
-					}
-					case JSON5_TOK_OBJ_OPEN: {
-						json5_value_set_object (item -> value);
-						break;
-					}
-					default: {
-						break;
+				}
+				else {
+					switch (token -> type) {
+						case JSON5_TOK_STRING: {
+							json5_value_set_string (item -> value, (char *) token -> token, token -> length);
+							break;
+						}
+						case JSON5_TOK_NUMBER: {
+							json5_value_set_int (item -> value, token -> value.i);
+							break;
+						}
+						case JSON5_TOK_NUMBER_FLOAT: {
+							json5_value_set_float (item -> value, token -> value.f);
+							break;
+						}
+						case JSON5_TOK_NUMBER_BOOL: {
+							json5_value_set_bool (item -> value, token -> value.i != 0);
+							break;
+						}
+						case JSON5_TOK_NULL: {
+							json5_value_set_null (item -> value);
+							break;
+						}
+						case JSON5_TOK_NAN: {
+							json5_value_set_nan (item -> value);
+							break;
+						}
+						case JSON5_TOK_INFINITY: {
+							json5_value_set_infinity (item -> value, (int) token -> value.i);
+							break;
+						}
+						case JSON5_TOK_ARR_OPEN: {
+							json5_value_set_array (item -> value);
+							break;
+						}
+						case JSON5_TOK_OBJ_OPEN: {
+							json5_value_set_object (item -> value);
+							break;
+						}
+						default: {
+							break;
+						}
 					}
 				}
 
@@ -505,6 +541,12 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 				break;
 			}
 			case JSON5_STATE_CONTAINER_END: {
+				if (funcs) {
+					if (funcs -> end_container (token, funcs -> arg) != 0) {
+						goto error;
+					}
+				}
+
 				item = json5_parser_stack_pop (parser);
 				break;
 			}

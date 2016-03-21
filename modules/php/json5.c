@@ -163,6 +163,8 @@ static void make_value(json5_value const *value, zval *out_value) {
 					break;
 				}
 			}
+
+			break;
 		}
 	}
 }

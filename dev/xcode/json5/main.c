@@ -142,10 +142,6 @@ static int put_tokens (json5_token const * token, void * arg) {
 			printf (">> name: \"%s\"\n", token -> token);
 			break;
 		}
-		case JSON5_TOK_NAME_SIGN: {
-			printf (">> sign name: \"%s\" %lld\n", token -> token, token -> value.i);
-			break;
-		}
 		case JSON5_TOK_END: {
 			printf (">> END\n");
 			break;
@@ -156,6 +152,97 @@ static int put_tokens (json5_token const * token, void * arg) {
 	}*/
 
 	return json5_parser_put_tokens (&parser, token, 1);
+}
+
+static int begin_arr (json5_token const * token, void * arg) {
+	printf ("begin array\n");
+
+	return 0;
+}
+
+static int begin_obj (json5_token const * token, void * arg) {
+	printf ("begin object\n");
+
+	return 0;
+}
+
+static int end_container (json5_token const * token, void * arg) {
+	printf ("end_container\n");
+
+	return 0;
+}
+
+static int begin_key (json5_token const * token, void * arg) {
+	printf ("begin_key %s\n", token -> token);
+
+	return 0;
+}
+
+static int begin_index (json5_token const * token, void * arg) {
+	printf ("begin_index\n");
+
+	return 0;
+}
+
+static int set_value (json5_token const * token, void * arg) {
+	printf ("set_value ");
+
+	switch (token -> type) {
+		case JSON5_TOK_OBJ_OPEN: {
+			printf ("{\n");
+			break;
+		}
+		case JSON5_TOK_OBJ_CLOSE: {
+			printf ("}\n");
+			break;
+		}
+		case JSON5_TOK_ARR_OPEN: {
+			printf ("[\n");
+			break;
+		}
+		case JSON5_TOK_ARR_CLOSE: {
+			printf ("]\n");
+			break;
+		}
+		case JSON5_TOK_COMMA: {
+			printf (",\n");
+			break;
+		}
+		case JSON5_TOK_COLON: {
+			printf (":\n");
+			break;
+		}
+		case JSON5_TOK_NAN: {
+			printf ("NaN\n");
+			break;
+		}
+		case JSON5_TOK_INFINITY: {
+			printf ("%cInfinity\n", token -> value.i > 0 ? '+' : '-');
+			break;
+		}
+		case JSON5_TOK_NULL: {
+			printf ("null\n");
+			break;
+		}
+		case JSON5_TOK_STRING: {
+			printf ("str: \"%s\"\n", token -> token);
+			break;
+		}
+		case JSON5_TOK_NUMBER: {
+			printf ("i: %lld\n", token -> value.i);
+			break;
+		}
+		case JSON5_TOK_NUMBER_FLOAT: {
+			printf ("f: %lf\n", token -> value.f);
+			break;
+		}
+		case JSON5_TOK_NUMBER_BOOL: {
+			printf ("b: %lld\n", token -> value.i);
+			break;
+		}
+	}
+
+	return 0;
 }
 
 int main (int argc, const char * argv []) {
@@ -341,13 +428,25 @@ int main (int argc, const char * argv []) {
 //	"    },\n"
 //	"}\n";
 
-//string = "[5, [5, -0xEF, {a: 4, Ô∏:456}]]";
+string = "[5, [5, -0xEF, {a: 4, Ôπ:456}]]";
+
 
 	json5_coder coder;
 	json5_value value;
 
 	json5_value_init (&value);
 	json5_coder_init (&coder);
+
+	json5_parser_funcs funcs = {
+		.begin_arr     = begin_arr,
+		.begin_obj     = begin_obj,
+		.end_container = end_container,
+		.begin_key     = begin_key,
+		.begin_index   = begin_index,
+		.set_value     = set_value,
+	};
+
+	coder.parser.funcs = &funcs;
 
 	int res = json5_coder_decode (&coder, (uint8_t *) string, strlen (string), &value);
 

@@ -37,11 +37,6 @@
  */
 typedef struct {
 	/**
-	 * The callback argument.
-	 */
-	void * arg;
-
-	/**
 	 * Begin a new array.
 	 */
 	int (*begin_arr) (json5_token const * token, void * arg);
@@ -86,6 +81,7 @@ typedef struct {
 	size_t stack_len;
 	size_t stack_cap;
 	json5_parser_funcs const * funcs;
+	void * funcs_arg;
 	json5_value value;
 	json5_value error;
 } json5_parser;

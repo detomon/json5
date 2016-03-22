@@ -186,6 +186,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 	json5_parser_item * item;
 	json5_value * value;
 	json5_parser_funcs const * funcs = parser -> funcs;
+	void * funcs_arg = parser -> funcs_arg;
 
 	item = json5_parser_stack_top (parser);
 
@@ -256,7 +257,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 				switch (token -> type) {
 					case JSON5_TOK_ARR_OPEN: {
 						if (funcs) {
-							if (funcs -> begin_index (token, funcs -> arg) != 0) {
+							if (funcs -> begin_index (token, funcs_arg) != 0) {
 								goto error;
 							}
 						}
@@ -282,7 +283,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 					}
 					case JSON5_TOK_OBJ_OPEN: {
 						if (funcs) {
-							if (funcs -> begin_index (token, funcs -> arg) != 0) {
+							if (funcs -> begin_index (token, funcs_arg) != 0) {
 								goto error;
 							}
 						}
@@ -318,7 +319,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 						}
 
 						if (funcs) {
-							if (funcs -> begin_index (token, funcs -> arg) != 0) {
+							if (funcs -> begin_index (token, funcs_arg) != 0) {
 								goto error;
 							}
 						}
@@ -372,7 +373,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 					case JSON5_TOK_NAN:
 					case JSON5_TOK_INFINITY: {
 						if (funcs) {
-							if (funcs -> begin_key (token, funcs -> arg) != 0) {
+							if (funcs -> begin_key (token, funcs_arg) != 0) {
 								goto error;
 							}
 						}
@@ -491,8 +492,25 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 		switch (item -> state) {
 			case JSON5_STATE_VALUE: {
 				if (funcs) {
-					if (funcs -> set_value (token, funcs -> arg) != 0) {
-						goto error;
+					switch (token -> type) {
+						case JSON5_TOK_ARR_OPEN: {
+							if (funcs -> begin_arr (token, funcs_arg) != 0) {
+								goto error;
+							}
+							break;
+						}
+						case JSON5_TOK_OBJ_OPEN: {
+							if (funcs -> begin_obj (token, funcs_arg) != 0) {
+								goto error;
+							}
+							break;
+						}
+						default: {
+							if (funcs -> set_value (token, funcs_arg) != 0) {
+								goto error;
+							}
+							break;
+						}
 					}
 				}
 				else {
@@ -544,7 +562,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 			}
 			case JSON5_STATE_CONTAINER_END: {
 				if (funcs) {
-					if (funcs -> end_container (token, funcs -> arg) != 0) {
+					if (funcs -> end_container (token, funcs_arg) != 0) {
 						goto error;
 					}
 				}

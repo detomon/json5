@@ -233,7 +233,11 @@ static int set_value(json5_token const *token, _json5_stack *stack) {
 		default: {
 			switch (token->type) {
 				case JSON5_TOK_NUMBER: {
+#if SIZEOF_ZEND_LONG == 8
 					ZVAL_LONG(value, token->value.i);
+#else
+					ZVAL_DOUBLE(value, (double) token->value.i);
+#endif
 					break;
 				}
 				case JSON5_TOK_NUMBER_FLOAT: {

@@ -169,6 +169,7 @@ static int begin_arr_or_obj(json5_token const *token, _json5_stack *stack) {
 
 static int end_container(json5_token const *token, _json5_stack *stack) {
 	_json5_stack_pop(stack);
+	_json5_stack_pop(stack);
 
 	return 0;
 }

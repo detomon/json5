@@ -88,7 +88,7 @@ struct json5_value {
  */
 struct json5_obj_prop {
 	json5_hash hash;
-	char * key;
+	uint8_t * key;
 	size_t key_len;
 	json5_value value;
 };
@@ -208,7 +208,7 @@ extern int json5_value_delete_prop (json5_value * value, char const * key, size_
  *
  * Reutn -1 if value is not an object
  */
-extern int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * value);
+extern int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * obj);
 
 /**
  * Get next object key and value

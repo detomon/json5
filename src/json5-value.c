@@ -27,9 +27,22 @@
 
 #define ARRAY_MIN_CAP 8
 #define OBJECT_MIN_CAP 8
-#define PLACEHOLDER_KEY ((char *) 1)
+#define PLACEHOLDER_KEY ((uint8_t *) 1)
 
 static json5_hash hash_table_seed = 0XD4244CD25E94BDBBULL;
+
+static uint8_t * string_copy (uint8_t const * str, size_t len) {
+	uint8_t * new_str = malloc (len + 1);
+
+	if (!new_str) {
+		return NULL;
+	}
+
+	memcpy (new_str, str, len);
+	new_str [len] = '\0';
+
+	return new_str;
+}
 
 static void json5_value_delete (json5_value * value, json5_type type);
 
@@ -128,14 +141,20 @@ void json5_value_set_null (json5_value * value) {
 }
 
 int json5_value_set_string (json5_value * value, char const * str, size_t len) {
-	char * new_str = strndup (str, len);
+	uint8_t * new_str;
+
+	if (len == (size_t) -1) {
+		len = strlen (str);
+	}
+
+	new_str = string_copy ((uint8_t const *) str, len);
 
 	if (!new_str) {
 		return -1;
 	}
 
 	json5_value_delete (value, JSON5_TYPE_STRING);
-	value -> str.s = (void *) new_str;
+	value -> str.s = new_str;
 	value -> str.len = len;
 
 	return 0;
@@ -198,7 +217,7 @@ static json5_hash json5_get_hash (char const * key, size_t key_len) {
 	return hash;
 }
 
-static json5_obj_prop * json5_prop_lookup (json5_obj_prop * props, size_t mask, json5_hash hash, char const * key, size_t key_len) {
+static json5_obj_prop * json5_prop_lookup (json5_obj_prop * props, size_t mask, json5_hash hash, uint8_t const * key, size_t key_len) {
 	json5_hash i = hash, perturb = hash;
 	json5_obj_prop * prop = &props [i & mask];
 
@@ -233,9 +252,9 @@ json5_value * json5_value_get_prop (json5_value * value, char const * key, size_
 	}
 
 	hash = json5_get_hash (key, key_len);
-	prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, key, key_len);
+	prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, (uint8_t const *) key, key_len);
 
-	if (prop -> key) {
+	if (prop -> key > PLACEHOLDER_KEY) {
 		return &prop -> value;
 	}
 
@@ -278,7 +297,7 @@ static int json5_object_grow (json5_value * value) {
 json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len) {
 	json5_hash hash;
 	json5_obj_prop * prop;
-	char * new_key;
+	uint8_t * new_key;
 
 	if (value -> type != JSON5_TYPE_OBJECT) {
 		return NULL;
@@ -295,17 +314,17 @@ json5_value * json5_value_set_prop (json5_value * value, char const * key, size_
 	}
 
 	hash = json5_get_hash (key, key_len);
-	prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, key, key_len);
+	prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, (uint8_t const *) key, key_len);
 
 	if (value -> obj.len + (value -> obj.len / 2) > value -> obj.cap) {
 		if (json5_object_grow (value) != 0) {
 			return NULL;
 		}
 
-		prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, key, key_len);
+		prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, (uint8_t const *)key, key_len);
 	}
 
-	new_key = strndup (key, key_len);
+	new_key = string_copy ((uint8_t const *) key, key_len);
 
 	if (!new_key) {
 		return NULL;
@@ -336,7 +355,7 @@ int json5_value_delete_prop (json5_value * value, char const * key, size_t key_l
 	}
 
 	hash = json5_get_hash (key, key_len);
-	prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, key, key_len);
+	prop = json5_prop_lookup (value -> obj.itms, value -> obj.cap - 1, hash, (uint8_t const *) key, key_len);
 
 	if (prop -> key) {
 		free (prop -> key);
@@ -350,13 +369,13 @@ int json5_value_delete_prop (json5_value * value, char const * key, size_t key_l
 	return 0;
 }
 
-int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * value) {
-	if (value -> type != JSON5_TYPE_OBJECT) {
+int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * obj) {
+	if (obj -> type != JSON5_TYPE_OBJECT) {
 		return -1;
 	}
 
-	itor -> obj = value;
-	itor -> prop = value -> obj.itms;
+	itor -> obj = obj;
+	itor -> prop = obj -> obj.itms;
 
 	return 0;
 }
@@ -371,7 +390,7 @@ int json5_obj_itor_next (json5_obj_itor * itor, char const ** out_key, size_t * 
 	do {
 		if (itor -> prop -> key > PLACEHOLDER_KEY) {
 			*out_value = &itor -> prop -> value;
-			*out_key = itor -> prop -> key;
+			*out_key = (char const *) itor -> prop -> key;
 			*out_key_len = itor -> prop -> key_len;
 
 			itor -> prop ++;

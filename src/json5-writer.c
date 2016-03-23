@@ -27,7 +27,7 @@
 #include "json5-writer.h"
 
 #define BUFFER_CAP 4096
-#define PLACEHOLDER_KEY ((char *) 1)
+#define PLACEHOLDER_KEY ((uint8_t *) 1)
 
 enum
 {

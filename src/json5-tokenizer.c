@@ -303,7 +303,7 @@ static void json5_tokenizer_conv_number_float (json5_tokenizer * tknzr) {
 
 static void json5_tokenizer_number_add_digit (json5_tokenizer * tknzr, int value) {
 	if (tknzr -> number.type != JSON5_NUM_FLOAT) {
-		if (tknzr -> number.mant.u > INT64_MAX / 10) {
+		if (tknzr -> number.mant.u > (uint64_t) INT64_MAX / 10 + 1) {
 			json5_tokenizer_conv_number_float (tknzr);
 		}
 	}
@@ -311,7 +311,11 @@ static void json5_tokenizer_number_add_digit (json5_tokenizer * tknzr, int value
 	if (tknzr -> number.type != JSON5_NUM_FLOAT) {
 		tknzr -> number.mant.u = 10 * tknzr -> number.mant.u;
 
-		if (tknzr -> number.mant.u > INT64_MAX - value) {
+		if (tknzr -> number.sign && tknzr -> number.mant.u > (uint64_t) INT64_MAX - value + 1) {
+			json5_tokenizer_conv_number_float (tknzr);
+			tknzr -> number.mant.f += value;
+		}
+		else if (!tknzr -> number.sign && tknzr -> number.mant.u > INT64_MAX - value) {
 			json5_tokenizer_conv_number_float (tknzr);
 			tknzr -> number.mant.f += value;
 		}
@@ -329,7 +333,7 @@ static void json5_tokenizer_number_add_digit (json5_tokenizer * tknzr, int value
 
 static void json5_tokenizer_number_add_hex_digit (json5_tokenizer * tknzr, int value) {
 	if (tknzr -> number.type != JSON5_NUM_FLOAT) {
-		if (tknzr -> number.mant.u > INT64_MAX / 16) {
+		if (tknzr -> number.mant.u > (uint64_t) INT64_MAX / 16 + 1) {
 			json5_tokenizer_conv_number_float (tknzr);
 		}
 	}
@@ -337,7 +341,11 @@ static void json5_tokenizer_number_add_hex_digit (json5_tokenizer * tknzr, int v
 	if (tknzr -> number.type != JSON5_NUM_FLOAT) {
 		tknzr -> number.mant.u = 16 * tknzr -> number.mant.u;
 
-		if (tknzr -> number.mant.u > INT64_MAX - value) {
+		if (tknzr -> number.sign && tknzr -> number.mant.u > (uint64_t) INT64_MAX - value + 1) {
+			json5_tokenizer_conv_number_float (tknzr);
+			tknzr -> number.mant.f += value;
+		}
+		else if (!tknzr -> number.sign && tknzr -> number.mant.u > INT64_MAX - value) {
 			json5_tokenizer_conv_number_float (tknzr);
 			tknzr -> number.mant.f += value;
 		}

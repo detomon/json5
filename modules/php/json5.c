@@ -230,29 +230,23 @@ static int set_value(json5_token const *token, _json5_stack *stack) {
 			ZVAL_DOUBLE(value, double_nan);
 			break;
 		}
-		default: {
-			switch (token->type) {
-				case JSON5_TOK_NUMBER: {
+		case JSON5_TOK_NUMBER: {
 #if SIZEOF_ZEND_LONG == 8
-					ZVAL_LONG(value, token->value.i);
+			ZVAL_LONG(value, token->value.i);
 #else
-					ZVAL_DOUBLE(value, (double) token->value.i);
+			ZVAL_DOUBLE(value, (double) token->value.i);
 #endif
-					break;
-				}
-				case JSON5_TOK_NUMBER_FLOAT: {
-					ZVAL_DOUBLE(value, token->value.f);
-					break;
-				}
-				case JSON5_TOK_NUMBER_BOOL: {
-					ZVAL_BOOL(value, token->value.i);
-					break;
-				}
-				default: {
-					break;
-				}
-			}
-
+			break;
+		}
+		case JSON5_TOK_NUMBER_FLOAT: {
+			ZVAL_DOUBLE(value, token->value.f);
+			break;
+		}
+		case JSON5_TOK_NUMBER_BOOL: {
+			ZVAL_BOOL(value, token->value.i);
+			break;
+		}
+		default: {
 			break;
 		}
 	}

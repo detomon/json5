@@ -149,6 +149,7 @@ void json5_parser_reset (json5_parser * parser)
 {
 	json5_parser_item * stack = parser -> stack;
 	json5_parser_funcs const * funcs = parser -> funcs;
+	void * funcs_arg = parser -> funcs_arg;
 	json5_parser_item * item;
 	size_t stack_cap = parser -> stack_cap;
 
@@ -159,6 +160,7 @@ void json5_parser_reset (json5_parser * parser)
 	parser -> stack = stack;
 	parser -> stack_cap = stack_cap;
 	parser -> funcs = funcs;
+	parser -> funcs_arg = funcs_arg;
 
 	item = json5_parser_stack_push (parser);
 

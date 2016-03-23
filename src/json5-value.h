@@ -94,7 +94,7 @@ struct json5_obj_prop {
 };
 
 /**
- * Defined an object iterator
+ * Defines an object iterator.
  */
 struct json5_obj_itor {
 	json5_value const * obj;
@@ -204,16 +204,16 @@ extern json5_value * json5_value_set_prop (json5_value * value, char const * key
 extern int json5_value_delete_prop (json5_value * value, char const * key, size_t key_len);
 
 /**
- * Initialize object iterator
+ * Initialize object iterator.
  *
- * Reutn -1 if value is not an object
+ * Returns -1 if value is not an object.
  */
 extern int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * obj);
 
 /**
- * Get next object key and value
+ * Get next object key and value.
  *
- * Return 1 while values are available
+ * Returns 1 while values are available.
  */
 extern int json5_obj_itor_next (json5_obj_itor * itor, char const ** out_key, size_t * out_key_len, json5_value ** out_value);
 

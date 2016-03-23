@@ -887,10 +887,6 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 							value = c - '0';
 							break;
 						}
-						case JSON5_TOK_END: {
-							goto unexpected_char;
-							break;
-						}
 						default: {
 							switch (c) {
 								case 'e':

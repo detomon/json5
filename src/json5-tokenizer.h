@@ -62,7 +62,6 @@ typedef enum {
 	JSON5_TOK_SIGN,
 	JSON5_TOK_PERIOD,
 	JSON5_TOK_SPACE,
-	JSON5_TOK_MBCHAR,
 	// special
 	JSON5_TOK_END,
 } json5_tok_type;

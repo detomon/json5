@@ -181,6 +181,79 @@ void json5_parser_destroy (json5_parser * parser)
 	memset (parser, 0, sizeof (*parser));
 }
 
+static void json5_parser_print_token_error (json5_parser * parser, json5_token const * token)
+{
+	char const * name = NULL;
+	char const * value = NULL;
+
+	switch (token -> type) {
+		case JSON5_TOK_OBJ_OPEN: {
+			value = "{";
+			break;
+		}
+		case JSON5_TOK_OBJ_CLOSE: {
+			value = "}";
+			break;
+		}
+		case JSON5_TOK_ARR_OPEN: {
+			value = "[";
+			break;
+		}
+		case JSON5_TOK_COMMA: {
+			value = ",";
+			break;
+		}
+		case JSON5_TOK_COLON: {
+			value = ":";
+			break;
+		}
+		case JSON5_TOK_STRING: {
+			name = "string";
+			break;
+		}
+		case JSON5_TOK_NUMBER:
+		case JSON5_TOK_NUMBER_FLOAT:
+		case JSON5_TOK_NUMBER_BOOL: {
+			name = "number";
+			break;
+		}
+		case JSON5_TOK_NAME: {
+			name = "identifier";
+			break;
+		}
+		case JSON5_TOK_INFINITY: {
+			value = "Infinity";
+			break;
+		}
+		case JSON5_TOK_NAN: {
+			value = "NaN";
+			break;
+		}
+		case JSON5_TOK_NULL: {
+			value = "null";
+			break;
+		}
+		case JSON5_TOK_END: {
+			json5_parser_set_error (parser, "Premature end of file");
+			return;
+			break;
+		}
+		default: {
+			break;
+		}
+	}
+
+	if (name) {
+		json5_parser_set_error (parser, "Unexpected %s on line %d:%d",
+			name, token -> offset.lineno + 1, token -> offset.colno);
+	}
+	else {
+		json5_parser_set_error (parser, "Unexpected '%s' on line %d:%d",
+			value, token -> offset.lineno + 1, token -> offset.colno);
+	}
+
+}
+
 int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, size_t count)
 {
 	int res = 0;
@@ -585,14 +658,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 	return res;
 
 	unexpected_token: {
-		if (token -> type == JSON5_TOK_END) {
-			json5_parser_set_error (parser, "Premature end of file");
-		}
-		else {
-			json5_parser_set_error (parser, "Unexpected token on line %d:%d",
-				token -> offset.lineno + 1, token -> offset.colno);
-		}
-
+		json5_parser_print_token_error (parser, token);
 		json5_parser_stack_top (parser) -> state = JSON5_STATE_ERROR;
 		goto error;
 	}

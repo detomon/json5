@@ -1221,7 +1221,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 				offset.lineno + 1, offset.colno);
 		}
 		else if (c >= ' ' && c < 127) {
-			json5_tokenizer_set_error (tknzr, "Invalid character '%c' on line %d:%d",
+			json5_tokenizer_set_error (tknzr, "Unexpected character '%c' on line %d:%d",
 				c, offset.lineno + 1, offset.colno);
 		}
 		else {
@@ -1233,7 +1233,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	}
 
 	unexpected_end_starting: {
-		json5_tokenizer_set_error (tknzr, "Premature end of file for string starting at %d:%d",
+		json5_tokenizer_set_error (tknzr, "Premature end of file for string starting on line %d:%d",
 			tknzr -> token.offset.lineno + 1, tknzr -> token.offset.colno);
 		goto error;
 	}

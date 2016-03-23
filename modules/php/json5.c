@@ -9,8 +9,17 @@
 #define PHP_JSON5_VERSION "1.0"
 #define PHP_JSON5_EXTNAME "json5"
 
+#define PHP_JSON5_STACK_INIT_SIZE 64
+
+typedef struct {
+	size_t len;
+	size_t cap;
+	struct _json5_item {
+		zval *value;
+	} *stack;
+} _json5_stack;
+
 extern zend_module_entry json5_module_entry;
-#define phpext_json5_ptr &json5_module_entry
 
 static double double_pos_inf;
 static double double_neg_inf;
@@ -68,6 +77,195 @@ PHP_MINIT_FUNCTION(json5)
 	return SUCCESS;
 }
 
+static int _json5_stack_init(_json5_stack *stack) {
+	memset(stack, 0, sizeof(*stack));
+
+	stack->len = 0;
+	stack->cap = PHP_JSON5_STACK_INIT_SIZE;
+	stack->stack = safe_emalloc(stack->cap, sizeof(zval*), 0);
+
+	if (!stack->stack) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static struct _json5_item *_json5_stack_top(_json5_stack *stack) {
+	if (stack->len < 1) {
+		return NULL;
+	}
+
+	return &stack->stack[stack->len - 1];
+}
+
+static struct _json5_item *_json5_stack_push(_json5_stack *stack) {
+	size_t new_cap;
+	struct _json5_item *new_stack;
+	struct _json5_item *top = _json5_stack_top(stack);
+	struct _json5_item *next;
+
+	if (stack->len >= stack->cap) {
+		new_cap = stack->cap * 2;
+		new_stack = erealloc(stack->stack, new_cap * sizeof(*new_stack));
+
+		if (!new_stack) {
+			return NULL;
+		}
+
+		stack->cap = new_cap;
+		stack->stack = new_stack;
+	}
+
+	next = &stack->stack[stack->len ++];
+
+	if (top) {
+		next->value = top->value;
+	}
+
+	return next;
+}
+
+static struct _json5_item *_json5_stack_pop(_json5_stack *stack) {
+	struct _json5_item *top = NULL;
+
+	if (stack->len > 0) {
+		top = &stack->stack[stack->len - 1];
+		//zval_ptr_dtor(&top->value);
+		stack->len --;
+	}
+
+	if (stack->len > 0) {
+		return &stack->stack[stack->len - 1];
+	}
+
+	return NULL;
+}
+
+static void _json5_stack_destroy(_json5_stack *stack) {
+	while (_json5_stack_pop(stack)) {
+		;
+	}
+
+	if (stack->stack) {
+		efree(stack->stack);
+	}
+}
+
+static int begin_arr_or_obj(json5_token const *token, _json5_stack *stack) {
+	struct _json5_item *top;
+
+	top = _json5_stack_top(stack);
+	array_init(top->value);
+
+	top = _json5_stack_push(stack);
+
+	if (!top) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static int end_container(json5_token const *token, _json5_stack *stack) {
+	_json5_stack_pop(stack);
+
+	return 0;
+}
+
+static int begin_key(json5_token const *token, _json5_stack *stack) {
+	zval *value;
+	struct _json5_item *top;
+
+ 	top = _json5_stack_push(stack);
+
+	if (!top) {
+		return -1;
+	}
+
+	// insert dummy empty string to get reference to array item
+	top->value = add_get_assoc_stringl_ex(top->value, (char *) token->token, token->length, "", 0);
+
+	return 0;
+}
+
+static int begin_index(json5_token const *token, _json5_stack *stack) {
+	HashTable *arr_hash;
+	struct _json5_item *top;
+	int array_count;
+
+	top = _json5_stack_push(stack);
+
+	if (!top) {
+		return -1;
+	}
+
+	// insert dummy long to get reference to array item
+ 	arr_hash = Z_ARRVAL_P(top->value);
+    array_count = zend_hash_num_elements(arr_hash);
+	top->value = add_get_index_long(top->value, array_count, 0);
+
+	return 0;
+}
+
+static int set_value(json5_token const *token, _json5_stack *stack) {
+	struct _json5_item *top = _json5_stack_top(stack);
+	zval *value = top->value;
+
+	switch (token->type) {
+		case JSON5_TOK_NULL: {
+			ZVAL_NULL(value);
+			break;
+		}
+		case JSON5_TOK_STRING: {
+			ZVAL_STRINGL(value, (char *) token->token, token->length);
+			break;
+		}
+		case JSON5_TOK_INFINITY: {
+			ZVAL_DOUBLE(value, token->value.i >= 0 ? double_pos_inf : double_neg_inf);
+			break;
+		}
+		case JSON5_TOK_NAN: {
+			ZVAL_DOUBLE(value, double_nan);
+			break;
+		}
+		default: {
+			switch (token->type) {
+				case JSON5_TOK_NUMBER: {
+					ZVAL_LONG(value, token->value.i);
+					break;
+				}
+				case JSON5_TOK_NUMBER_FLOAT: {
+					ZVAL_DOUBLE(value, token->value.f);
+					break;
+				}
+				case JSON5_TOK_NUMBER_BOOL: {
+					ZVAL_BOOL(value, token->value.i);
+					break;
+				}
+				default: {
+					break;
+				}
+			}
+
+			break;
+		}
+	}
+
+	_json5_stack_pop(stack);
+
+	return 0;
+}
+
+static json5_parser_funcs funcs = {
+	.begin_arr     = (void *) begin_arr_or_obj,
+	.begin_obj     = (void *) begin_arr_or_obj,
+	.end_container = (void *) end_container,
+	.begin_key     = (void *) begin_key,
+	.begin_index   = (void *) begin_index,
+	.set_value     = (void *) set_value,
+};
+
 #define FUNCTION_NAME "json5_decode"
 
 static int coder_handle_error(json5_coder *coder) {
@@ -87,105 +285,34 @@ static int coder_handle_error(json5_coder *coder) {
 	return 0;
 }
 
-static void make_value(json5_value const *value, zval *out_value) {
-	switch (value->type) {
-		case JSON5_TYPE_NULL: {
-			ZVAL_NULL(out_value);
-			break;
-		}
-		case JSON5_TYPE_STRING: {
-			ZVAL_STRINGL(out_value, (char *) value->str.s, value->str.len);
-			break;
-		}
-		case JSON5_TYPE_ARRAY: {
-			json5_value *item;
-			zval arr_item;
-
-			array_init(out_value);
-
-			for (size_t i = 0; i < value->arr.len; i ++) {
-				item = &value->arr.itms[i];
-
-				ZVAL_NULL(&arr_item);
-
-				make_value(item, &arr_item);
-
-				// does this make a copy?
-				add_next_index_zval(out_value, &arr_item);
-			}
-
-			break;
-		}
-		case JSON5_TYPE_OBJECT: {
-			json5_value *item;
-			char const *key;
-			size_t key_len;
-			json5_obj_itor itor;
-			zval arr_item;
-
-			json5_obj_itor_init(&itor, value);
-			array_init(out_value);
-
-			while (json5_obj_itor_next(&itor, &key, &key_len, &item)) {
-				ZVAL_NULL(&arr_item);
-
-				make_value(item, &arr_item);
-
-				// does this make a copy?
-				add_assoc_zval(out_value, key, &arr_item);
-			}
-
-			break;
-		}
-		case JSON5_TYPE_INFINITY: {
-			ZVAL_DOUBLE(out_value, value->num.i >= 0 ? double_pos_inf : double_neg_inf);
-			break;
-		}
-		case JSON5_TYPE_NAN: {
-			ZVAL_DOUBLE(out_value, double_nan);
-			break;
-		}
-		default: {
-			switch (value->type) {
-				case JSON5_TYPE_INT: {
-					ZVAL_LONG(out_value, value->num.i);
-					break;
-				}
-				case JSON5_TYPE_FLOAT: {
-					ZVAL_DOUBLE(out_value, value->num.f);
-					break;
-				}
-				case JSON5_TYPE_BOOL: {
-					ZVAL_BOOL(out_value, value->num.i);
-					break;
-				}
-				default: {
-					break;
-				}
-			}
-
-			break;
-		}
-	}
-}
-
 PHP_FUNCTION(json5_decode)
 {
 	int res;
 	zend_string *string;
-	int length;
 	json5_coder coder;
 	json5_value value;
-	zval *z;
+	struct _json5_item *top;
+	_json5_stack stack;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &string) == FAILURE) {
 		RETURN_NULL();
 	}
 
 	if (json5_coder_init(&coder) != 0) {
-		php_error_docref("function." FUNCTION_NAME TSRMLS_CC, E_CORE_ERROR, "Internal allocation error");
+		php_error_docref("function." FUNCTION_NAME TSRMLS_CC, E_ERROR, "Allocation error");
 		goto error;
 	}
+
+	if (_json5_stack_init(&stack) != 0) {
+		php_error_docref("function." FUNCTION_NAME TSRMLS_CC, E_ERROR, "Allocation error");
+		goto error;
+	}
+
+	coder.parser.funcs = &funcs;
+	coder.parser.funcs_arg = &stack;
+
+	top = _json5_stack_push(&stack); // root
+	top->value = return_value;
 
 	json5_value_init(&value);
 
@@ -199,15 +326,15 @@ PHP_FUNCTION(json5_decode)
 
 	json5_coder_destroy(&coder);
 
-	make_value(&value, return_value);
-
 	json5_value_set_null(&value);
+	_json5_stack_destroy(&stack);
 
 	return;
 
 	error: {
 		json5_coder_destroy(&coder);
 		json5_value_set_null(&value);
+		_json5_stack_destroy(&stack);
 
 		RETURN_NULL();
 	}

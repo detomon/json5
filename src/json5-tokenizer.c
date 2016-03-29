@@ -245,7 +245,7 @@ static void json5_tokenizer_put_mb_char (json5_tokenizer * tknzr, unsigned c) {
 		tknzr -> buffer [tknzr -> buffer_len ++] = 0x80 | ((c >> 6) & 0x3F);
 		tknzr -> buffer [tknzr -> buffer_len ++] = 0x80 | (c & 0x3F);
 	}
-	else { // invalid rune
+	else { // invalid glyph
 		c = 0xFFFD;
 		goto redo;
 	}
@@ -521,7 +521,7 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 		}
 		else {
 			char_type = JSON5_TOK_OTHER;
-			info = json5_ut_lookup_rune (c);
+			info = json5_ut_lookup_glyph (c);
 
 			switch (info -> category) {
 				case JSON5_UT_CATEGORY_LETTER_UPPERCASE:

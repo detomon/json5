@@ -9,11 +9,16 @@
 #define PHP_JSON5_VERSION "1.0"
 #define PHP_JSON5_EXTNAME "json5"
 
-#define PHP_JSON5_STACK_INIT_SIZE 64
+#define PHP_JSON5_STACK_INIT_SIZE 16
+
+enum {
+	JSON5_FLAGS_ASSOC = 1 << 0,
+};
 
 typedef struct {
 	size_t len;
 	size_t cap;
+	size_t flags;
 	struct _json5_item {
 		zval *value;
 	} *stack;
@@ -77,11 +82,12 @@ PHP_MINIT_FUNCTION(json5)
 	return SUCCESS;
 }
 
-static int _json5_stack_init(_json5_stack *stack) {
+static int _json5_stack_init(_json5_stack *stack, size_t flags) {
 	memset(stack, 0, sizeof(*stack));
 
 	stack->len = 0;
 	stack->cap = PHP_JSON5_STACK_INIT_SIZE;
+	stack->flags = flags;
 	stack->stack = safe_emalloc(stack->cap, sizeof(zval*), 0);
 
 	if (!stack->stack) {
@@ -152,11 +158,34 @@ static void _json5_stack_destroy(_json5_stack *stack) {
 	}
 }
 
-static int begin_arr_or_obj(json5_token const *token, _json5_stack *stack) {
+static int begin_arr(json5_token const *token, _json5_stack *stack) {
 	struct _json5_item *top;
 
 	top = _json5_stack_top(stack);
 	array_init(top->value);
+
+	top = _json5_stack_push(stack);
+
+	if (!top) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static int begin_obj(json5_token const *token, _json5_stack *stack) {
+	struct _json5_item *top;
+
+	// use array instead of object
+	if (stack->flags & JSON5_FLAGS_ASSOC) {
+		return begin_arr(token, stack);
+	}
+
+	top = _json5_stack_top(stack);
+
+	if (object_init(top->value) != SUCCESS) {
+		return -1;
+	}
 
 	top = _json5_stack_push(stack);
 
@@ -175,7 +204,10 @@ static int end_container(json5_token const *token, _json5_stack *stack) {
 }
 
 static int begin_key(json5_token const *token, _json5_stack *stack) {
+	HashTable *arr_hash;
 	zval *value;
+	zend_string *key;
+	zval empty;
 	struct _json5_item *top;
 
  	top = _json5_stack_push(stack);
@@ -184,8 +216,19 @@ static int begin_key(json5_token const *token, _json5_stack *stack) {
 		return -1;
 	}
 
-	// insert dummy empty string to get reference to array item
-	top->value = add_get_assoc_stringl_ex(top->value, (char *) token->token, token->length, "", 0);
+ 	ZVAL_NULL(&empty);
+ 	arr_hash = HASH_OF(top->value);
+	key = zend_string_init((char const*) token->token, token->length, 0);
+
+	top->value = zend_hash_add(arr_hash, key, &empty);
+
+	if (!top->value) {
+		top->value = zend_hash_update(arr_hash, key, &empty);
+	}
+
+	if (!top->value) {
+		return -1;
+	}
 
 	return 0;
 }
@@ -193,7 +236,7 @@ static int begin_key(json5_token const *token, _json5_stack *stack) {
 static int begin_index(json5_token const *token, _json5_stack *stack) {
 	HashTable *arr_hash;
 	struct _json5_item *top;
-	int array_count;
+	ulong array_count;
 
 	top = _json5_stack_push(stack);
 
@@ -202,9 +245,13 @@ static int begin_index(json5_token const *token, _json5_stack *stack) {
 	}
 
 	// insert dummy long to get reference to array item
- 	arr_hash = Z_ARRVAL_P(top->value);
-    array_count = zend_hash_num_elements(arr_hash);
+ 	arr_hash = HASH_OF(top->value);
+    array_count = zend_hash_next_free_element(arr_hash);
 	top->value = add_get_index_long(top->value, array_count, 0);
+
+	if (!top->value) {
+		return -1;
+	}
 
 	return 0;
 }
@@ -257,8 +304,8 @@ static int set_value(json5_token const *token, _json5_stack *stack) {
 }
 
 static json5_parser_funcs funcs = {
-	.begin_arr     = (void *) begin_arr_or_obj,
-	.begin_obj     = (void *) begin_arr_or_obj,
+	.begin_arr     = (void *) begin_arr,
+	.begin_obj     = (void *) begin_obj,
 	.end_container = (void *) end_container,
 	.begin_key     = (void *) begin_key,
 	.begin_index   = (void *) begin_index,
@@ -288,13 +335,28 @@ PHP_FUNCTION(json5_decode)
 {
 	int res;
 	zend_string *string;
+	zval assoc;
+	zval recursion;
+	zval options;
 	json5_coder coder;
 	json5_value value;
 	struct _json5_item *top;
+	size_t flags = 0;
 	_json5_stack stack;
+	size_t numArgs = ZEND_NUM_ARGS();
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &string) == FAILURE) {
+	ZVAL_BOOL(&assoc, 0);
+	ZVAL_LONG(&recursion, 0);
+	ZVAL_LONG(&options, 0);
+
+	if (zend_parse_parameters(numArgs TSRMLS_CC, "S|bll", &string, &assoc, &recursion, &options) == FAILURE) {
 		RETURN_NULL();
+	}
+
+	if (numArgs > 1) {
+		if (Z_LVAL(assoc)) {
+			flags |= JSON5_FLAGS_ASSOC;
+		}
 	}
 
 	if (json5_coder_init(&coder) != 0) {
@@ -302,7 +364,7 @@ PHP_FUNCTION(json5_decode)
 		goto error;
 	}
 
-	if (_json5_stack_init(&stack) != 0) {
+	if (_json5_stack_init(&stack, flags) != 0) {
 		php_error_docref("function." FUNCTION_NAME TSRMLS_CC, E_ERROR, "Allocation error");
 		goto error;
 	}

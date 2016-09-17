@@ -19,26 +19,26 @@
 			break;
 		}
 		case JSON5_TYPE_BOOL: {
-			printf ("%s,\n", value -> num.i ? "true" : "false");
+			printf ("%s,\n", value -> ival ? "true" : "false");
 			break;
 		}
 		case JSON5_TYPE_INT: {
-			printf ("%lld,\n", value -> num.i);
+			printf ("%lld,\n", value -> ival);
 			break;
 		}
 		case JSON5_TYPE_FLOAT: {
-			printf ("%.17g,\n", value -> num.f);
+			printf ("%.17g,\n", value -> fval);
 			break;
 		}
 		case JSON5_TYPE_STRING: {
-			printf ("\"%s\",\n", value -> str.s);
+			printf ("\"%s\",\n", value -> sval);
 			break;
 		}
 		case JSON5_TYPE_ARRAY: {
 			printf ("[\n");
-			for (int i = 0; i < value -> arr.len; i ++) {
+			for (int i = 0; i < value -> len; i ++) {
 				printf ("%s", ind);
-				print_value (&value -> arr.itms [i], indent + 1);
+				print_value (&value -> items [i], indent + 1);
 			}
 			printf ("%s],\n", ind);
 			break;
@@ -47,20 +47,20 @@
 			1 * prop;
 
 			printf ("{\n");
-			for (int i = 0; i < value -> obj.cap; i ++) {
-				prop = &value -> obj.itms [i];
+			for (int i = 0; i < value -> cap; i ++) {
+				prop = &value -> props [i];
 
 				if (prop -> key && prop -> key != ((void *) -1)) {
 					printf ("%s\t", ind);
 					printf ("\"%s\": ", prop -> key);
-					print_value (&value -> obj.itms [i].value, indent + 1);
+					print_value (&value -> props [i].value, indent + 1);
 				}
 			}
 			printf ("%s},\n", ind);
 			break;
 		}
 		case JSON5_TYPE_INFINITY: {
-			printf ("%cInfinity,\n", value -> num.i > 0 ? '+' : '-');
+			printf ("%cInfinity,\n", value -> ival > 0 ? '+' : '-');
 			break;
 		}
 		case JSON5_TYPE_NAN: {
@@ -234,6 +234,9 @@ static int set_value (json5_token const * token, void * arg) {
 			printf ("b: %lld\n", token -> value.i);
 			break;
 		}
+		default: {
+			break;
+		}
 	}
 
 	return 0;
@@ -306,7 +309,7 @@ int main (int argc, const char * argv []) {
 	assert (item2 != NULL);
 	assert (item2 == item);
 	assert (item2 -> type == JSON5_TYPE_NULL);
-	assert (value.obj.len == 1);
+	assert (value.len == 1);
 
 	json5_value_set_float (item, -4e6);
 	//assert (item -> type == JSON5_TYPE_INT);
@@ -314,7 +317,7 @@ int main (int argc, const char * argv []) {
 	item2 = json5_value_set_prop (&value, "somkey44", -1);
 	assert (item2 != item);
 	assert (item2 -> type == JSON5_TYPE_NULL);
-	assert (value.obj.len == 2);
+	assert (value.len == 2);
 
 	json5_value_set_string (item2, "astring", 7);
 	assert (item2 -> type == JSON5_TYPE_STRING);
@@ -337,10 +340,10 @@ int main (int argc, const char * argv []) {
 	json5_value_set_string (item, "\"\n", 2);
 
 	//assert (json5_value_delete_prop (&value, "akey34", 6) == 1);
-	//assert (value.val.obj.len == 1);
+	//assert (value.val.len == 1);
 
 	//assert (json5_value_delete_prop (&value, "somkey44", 8) == 1);
-	//assert (value.val.obj.len == 0);
+	//assert (value.val.len == 0);
 
 	json5_writer writer;
 	json5_writer_init (&writer, JSON5_WRITER_FLAG_NO_ESCAPE, write_json, NULL);
@@ -428,7 +431,7 @@ string = "[5, [5, -0xEF, {a: 4, Ôπ:456}]]";
 	json5_coder coder;
 	json5_value value;
 
-	json5_value_init (&value);
+	value = JSON5_VALUE_INIT;
 	json5_coder_init (&coder);
 
 	json5_parser_funcs funcs = {
@@ -446,7 +449,7 @@ string = "[5, [5, -0xEF, {a: 4, Ôπ:456}]]";
 
 	if (res != 0) {
 		printf ("\n!! %s\n", (char *) coder.tknzr.buffer);
-		printf ("\n!! %s\n", (char *) coder.parser.error.str.s);
+		printf ("\n!! %s\n", (char *) coder.parser.error.sval);
 	}
 
 	// check error!!!
@@ -461,7 +464,7 @@ string = "[5, [5, -0xEF, {a: 4, Ôπ:456}]]";
 	json5_writer_destroy (&writer);
 
 	//printf ("\n!! %s\n", tknzr.buffer);
-	//printf ("\n!! %s\n", (char *) parser.error.str.s);
+	//printf ("\n!! %s\n", (char *) parser.error.sval);
 
 
 //	//char const * string = "{ r: { a: true }}";
@@ -474,7 +477,7 @@ string = "[5, [5, -0xEF, {a: 4, Ôπ:456}]]";
 //	printf ("\n\n*** %lf sec\n\n", (double) (clock () - c) / CLOCKS_PER_SEC);
 //
 //	printf ("\n!! %s\n", tknzr.buffer);
-//	printf ("\n!! %s\n", (char *) parser.error.str.s);
+//	printf ("\n!! %s\n", (char *) parser.error.sval);
 //
 //	json5_writer writer;
 //	json5_writer_init (&writer, JSON5_WRITER_FLAG_NO_ESCAPE, write_json, NULL);

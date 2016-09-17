@@ -375,7 +375,7 @@ PHP_FUNCTION(json5_decode)
 	top = _json5_stack_push(&stack); // root
 	top->value = return_value;
 
-	json5_value_init(&value);
+	value = JSON5_VALUE_INIT;
 
 	res = json5_coder_decode(&coder, (uint8_t *) string->val, string->len, &value);
 

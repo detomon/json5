@@ -101,7 +101,7 @@ struct json5_obj_itor {
  *
  * Values with cleared memory are also valid.
  */
-extern void json5_value_init (json5_value * value);
+#define JSON5_VALUE_INIT ((json5_value) {0})
 
 /**
  * Set integer value.

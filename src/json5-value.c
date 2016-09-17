@@ -110,12 +110,8 @@ static void json5_value_delete (json5_value * value, json5_type type) {
 		}
 	}
 
-	json5_value_init (value);
+	*value = JSON5_VALUE_INIT;
 	value -> type = type;
-}
-
-void json5_value_init (json5_value * value) {
-	memset (value, 0, sizeof (*value));
 }
 
 void json5_value_set_int (json5_value * value, int64_t i) {
@@ -208,7 +204,7 @@ json5_value * json5_value_append_item (json5_value * value) {
 	}
 
 	item = &value -> arr.itms [value -> arr.len ++];
-	json5_value_init (item);
+	*item = JSON5_VALUE_INIT;
 
 	return item;
 }

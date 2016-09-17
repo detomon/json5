@@ -249,7 +249,7 @@ json5_value * json5_value_get_prop (json5_value * value, char const * key, size_
 		return NULL;
 	}
 
-	if (value -> cap == 0) {
+	if (!value -> cap) {
 		return NULL;
 	}
 
@@ -309,7 +309,7 @@ json5_value * json5_value_set_prop (json5_value * value, char const * key, size_
 		return NULL;
 	}
 
-	if (value -> cap == 0) {
+	if (!value -> cap) {
 		if (json5_object_grow (value) != 0) {
 			return NULL;
 		}

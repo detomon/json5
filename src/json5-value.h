@@ -30,11 +30,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#define JSON5_TYPE_MASK 0xF
-#define JSON5_SUBTYPE_MASK 0xF0
-
 typedef enum json5_type json5_type;
-typedef enum json5_subtype json5_subtype;
 typedef struct json5_value json5_value;
 typedef struct json5_obj_prop json5_obj_prop;
 typedef struct json5_obj_itor json5_obj_itor;
@@ -45,15 +41,14 @@ typedef uint64_t json5_hash;
  */
 enum json5_type {
 	JSON5_TYPE_NULL,
-	JSON5_TYPE_NUMBER,
+	JSON5_TYPE_BOOL,
+	JSON5_TYPE_INT,
+	JSON5_TYPE_FLOAT,
+	JSON5_TYPE_INFINITY,
+	JSON5_TYPE_NAN,
 	JSON5_TYPE_STRING,
 	JSON5_TYPE_ARRAY,
 	JSON5_TYPE_OBJECT,
-	JSON5_TYPE_INFINITY,
-	JSON5_TYPE_NAN,
-	JSON5_TYPE_INT = JSON5_TYPE_NUMBER | (1 << 8),
-	JSON5_TYPE_FLOAT = JSON5_TYPE_NUMBER | (2 << 8),
-	JSON5_TYPE_BOOL = JSON5_TYPE_NUMBER | (3 << 8),
 };
 
 /**

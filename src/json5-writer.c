@@ -370,12 +370,14 @@ static int json5_writer_write_object (json5_writer * writer, json5_value const *
 }
 
 static int json5_writer_write_value (json5_writer * writer, json5_value const * value) {
-	switch (value -> type & JSON5_TYPE_MASK) {
+	switch (value -> type) {
 		case JSON5_TYPE_NULL: {
 			return json5_writer_write_null (writer, value);
 			break;
 		}
-		case JSON5_TYPE_NUMBER: {
+		case JSON5_TYPE_BOOL:
+		case JSON5_TYPE_INT:
+		case JSON5_TYPE_FLOAT: {
 			return json5_writer_write_number (writer, value);
 			break;
 		}

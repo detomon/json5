@@ -92,7 +92,7 @@ static void json5_value_delete (json5_value * value, json5_type type) {
 		return;
 	}
 
-	switch (value -> type & JSON5_TYPE_MASK) {
+	switch (value -> type) {
 		case JSON5_TYPE_STRING: {
 			json5_value_delete_string (value);
 			break;
@@ -105,10 +105,7 @@ static void json5_value_delete (json5_value * value, json5_type type) {
 			json5_value_delete_object (value);
 			break;
 		}
-		case JSON5_TYPE_NUMBER:
-		case JSON5_TYPE_NULL:
-		case JSON5_TYPE_INFINITY:
-		case JSON5_TYPE_NAN: {
+		default: {
 			break;
 		}
 	}

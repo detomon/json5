@@ -18,22 +18,16 @@
 			printf ("null");
 			break;
 		}
-		case JSON5_TYPE_NUMBER: {
-			switch (value -> subtype) {
-				case JSON5_SUBTYPE_NONE:
-				case JSON5_SUBTYPE_INT: {
-					printf ("%lld,\n", value -> num.i);
-					break;
-				}
-				case JSON5_SUBTYPE_FLOAT: {
-					printf ("%.17g,\n", value -> num.f);
-					break;
-				}
-				case JSON5_SUBTYPE_BOOL: {
-					printf ("%s,\n", value -> num.i ? "true" : "false");
-					break;
-				}
-			}
+		case JSON5_TYPE_BOOL: {
+			printf ("%s,\n", value -> num.i ? "true" : "false");
+			break;
+		}
+		case JSON5_TYPE_INT: {
+			printf ("%lld,\n", value -> num.i);
+			break;
+		}
+		case JSON5_TYPE_FLOAT: {
+			printf ("%.17g,\n", value -> num.f);
 			break;
 		}
 		case JSON5_TYPE_STRING: {

@@ -324,7 +324,7 @@ static int coder_handle_error(json5_coder *coder) {
 	}
 
 	if (error_val) {
-		php_error_docref("function." FUNCTION_NAME TSRMLS_CC, E_WARNING, (char *) error_val->str.s);
+		php_error_docref("function." FUNCTION_NAME TSRMLS_CC, E_WARNING, (char *) error_val->sval);
 		return 1;
 	}
 

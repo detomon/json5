@@ -234,15 +234,15 @@ static int json5_writer_write_number (json5_writer * writer, json5_value const *
 	switch (value -> type) {
 		default:
 		case JSON5_TYPE_INT: {
-			snprintf ((char *) number, sizeof (number), "%lld", value -> num.i);
+			snprintf ((char *) number, sizeof (number), "%lld", value -> ival);
 			break;
 		}
 		case JSON5_TYPE_FLOAT: {
-			snprintf ((char *) number, sizeof (number), "%.15g", value -> num.f);
+			snprintf ((char *) number, sizeof (number), "%.15g", value -> fval);
 			break;
 		}
 		case JSON5_TYPE_BOOL: {
-			strncpy ((char *) number, value -> num.i ? "true" : "false", sizeof (number));
+			strncpy ((char *) number, value -> ival ? "true" : "false", sizeof (number));
 			break;
 		}
 	}
@@ -251,7 +251,7 @@ static int json5_writer_write_number (json5_writer * writer, json5_value const *
 }
 
 static int json5_writer_write_infinity (json5_writer * writer, json5_value const * value) {
-	uint8_t const * string = (uint8_t const *) (value -> num.i >= 0 ? "Infinity" : "-Infinity");
+	uint8_t const * string = (uint8_t const *) (value -> ival >= 0 ? "Infinity" : "-Infinity");
 
 	return json5_writer_write_bytes (writer, (uint8_t const *) string, strlen ((void const *) string));
 }
@@ -271,7 +271,7 @@ static int json5_writer_write_string (json5_writer * writer, json5_value const *
 		return -1;
 	}
 
-	if ((res = json5_writer_write_escaped_bytes (writer, value -> str.s, value -> str.len)) != 0) {
+	if ((res = json5_writer_write_escaped_bytes (writer, value -> sval, value -> len)) != 0) {
 		return res;
 	}
 
@@ -290,14 +290,14 @@ static int json5_writer_write_array (json5_writer * writer, json5_value const * 
 		return -1;
 	}
 
-	for (size_t i = 0; i < value -> arr.len; i ++) {
-		item = &value -> arr.itms [i];
+	for (size_t i = 0; i < value -> len; i ++) {
+		item = &value -> items [i];
 
 		if ((res = json5_writer_write_value (writer, item)) != 0) {
 			return -1;
 		}
 
-		if (i < value -> arr.len - 1) {
+		if (i < value -> len - 1) {
 			if ((res = json5_writer_write_byte (writer, ',')) != 0) {
 				return -1;
 			}
@@ -339,15 +339,15 @@ static int json5_writer_write_prop (json5_writer * writer, json5_obj_prop const 
 
 static int json5_writer_write_object (json5_writer * writer, json5_value const * value) {
 	int res;
-	size_t cap = value -> obj.len;
+	size_t cap = value -> len;
 	json5_obj_prop const * item;
 
 	if ((res = json5_writer_write_byte (writer, '{')) != 0) {
 		return -1;
 	}
 
-	for (size_t i = 0; i < value -> obj.cap; i ++) {
-		item = &value -> obj.itms [i];
+	for (size_t i = 0; i < value -> cap; i ++) {
+		item = &value -> props [i];
 
 		if (item -> key > PLACEHOLDER_KEY) {
 			if ((res = json5_writer_write_prop (writer, item)) != 0) {

@@ -11,12 +11,12 @@ int main (int argc, char const * argv [])
 	item = json5_value_append_item (&value);
 	assert (item != NULL);
 	assert (item -> type == JSON5_TYPE_NULL);
-	assert (value.arr.len == 1);
+	assert (value.len == 1);
 
 	item = json5_value_append_item (&value);
 	assert (item != NULL);
 	assert (item -> type == JSON5_TYPE_NULL);
-	assert (value.arr.len == 2);
+	assert (value.len == 2);
 
 	return RESULT_PASS;
 }

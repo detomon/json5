@@ -47,31 +47,18 @@ enum json5_type {
 	JSON5_TYPE_OBJECT,
 };
 
-/**
- * Defines value container.
- */
 struct json5_value {
 	json5_type type;
-	union {
+	struct {
 		union {
-			int64_t i;
-			double f;
-		} num;
-		struct {
-			uint8_t * s;
-			size_t len;
-			size_t cap;
-		} str;
-		struct {
-			json5_value * itms;
-			size_t len;
-			size_t cap;
-		} arr;
-		struct {
-			json5_obj_prop * itms;
-			size_t len;
-			size_t cap;
-		} obj;
+			int64_t ival;
+			double fval;
+			uint8_t * sval;
+			json5_value * items;
+			json5_obj_prop * props;
+		};
+		size_t len;
+		size_t cap;
 	};
 };
 

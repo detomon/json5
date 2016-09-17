@@ -2,7 +2,7 @@
 
 int main (int argc, char const * argv [])
 {
-	json5_value value;
+	json5_value value = JSON5_VALUE_INIT;
 	json5_value * item, * item2;
 
 	json5_value_set_object (&value);

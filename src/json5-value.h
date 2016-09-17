@@ -202,6 +202,13 @@ extern json5_value * json5_value_set_prop (json5_value * value, char const * key
 extern int json5_value_delete_prop (json5_value * value, char const * key, size_t key_len);
 
 /**
+ * Transfers the value of `source` to `target` and clears `source`.
+ *
+ * If `source` is NULL, `target` is set to `null` with `json5_value_set_null`.
+ */
+extern void json5_value_transfer (json5_value * target, json5_value * source);
+
+/**
  * Initialize object iterator.
  *
  * Returns -1 if `obj` is not an object.

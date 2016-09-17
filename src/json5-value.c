@@ -375,6 +375,15 @@ int json5_value_delete_prop (json5_value * value, char const * key, size_t key_l
 	return 0;
 }
 
+void json5_value_transfer (json5_value * target, json5_value * source) {
+	json5_value_set_null (target);
+
+	if (source) {
+		*target = *source;
+		json5_value_set_null (source);
+	}
+}
+
 int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * obj) {
 	if (obj -> type != JSON5_TYPE_OBJECT) {
 		return -1;

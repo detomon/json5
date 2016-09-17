@@ -158,9 +158,10 @@ int json5_value_set_string (json5_value * value, char const * str, size_t len) {
 		return -1;
 	}
 
-	json5_value_delete (value, JSON5_TYPE_STRING);
-	value -> str.s = new_str;
+	json5_value_reset (value, JSON5_TYPE_STRING);
 	value -> str.len = len;
+	value -> str.cap = len;
+	value -> str.s = new_str;
 
 	return 0;
 }

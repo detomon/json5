@@ -64,16 +64,17 @@ struct json5_value {
 		struct {
 			uint8_t * s;
 			size_t len;
+			size_t cap;
 		} str;
 		struct {
+			json5_value * itms;
 			size_t len;
 			size_t cap;
-			json5_value * itms;
 		} arr;
 		struct {
+			json5_obj_prop * itms;
 			size_t len;
 			size_t cap;
-			json5_obj_prop * itms;
 		} obj;
 	};
 };

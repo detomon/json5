@@ -94,7 +94,7 @@ struct json5_obj_prop {
 };
 
 /**
- * Defines an object iterator.
+ * Defines an object key-value iterator.
  */
 struct json5_obj_itor {
 	json5_value const * obj;
@@ -102,7 +102,9 @@ struct json5_obj_itor {
 };
 
 /**
- * Intialize value container.
+ * Initializes a statically allocated `json5_value` with `null`.
+ *
+ * Values with cleared memory are also valid.
  */
 extern void json5_value_init (json5_value * value);
 
@@ -125,15 +127,15 @@ extern void json5_value_set_float (json5_value * value, double f);
 extern void json5_value_set_bool (json5_value * value, int b);
 
 /**
- * Set to NaN (Not a Number).
+ * Set to `NaN` (Not a Number).
  */
 extern void json5_value_set_nan (json5_value * value);
 
 /**
  * Set value to `Infinity`.
  *
- * If sign is >= 0, the value is positive infinite (+Infinity)
- * otherwise negative infinite (-Infinity).
+ * If sign is >= 0, the value is positive infinite `+Infinity`
+ * otherwise negative infinite `-Infinity`.
  */
 extern void json5_value_set_infinity (json5_value * value, int sign);
 
@@ -206,7 +208,7 @@ extern int json5_value_delete_prop (json5_value * value, char const * key, size_
 /**
  * Initialize object iterator.
  *
- * Returns -1 if value is not an object.
+ * Returns -1 if `obj` is not an object.
  */
 extern int json5_obj_itor_init (json5_obj_itor * itor, json5_value const * obj);
 
@@ -220,7 +222,7 @@ extern int json5_obj_itor_next (json5_obj_itor * itor, char const ** out_key, si
 /**
  * Sets the global hash table seed.
  *
- * To improve security, set this value to a random integer before creating
- * any hash table. This is to prevent malicious hash collision attacks.
+ * To improve security, set this value once to a random integer before creating
+ * any object values. This is to prevent malicious hash collision attacks.
  */
 extern void json5_set_hash_seed (json5_hash seed);

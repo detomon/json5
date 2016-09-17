@@ -46,12 +46,18 @@ static uint8_t * string_copy (uint8_t const * str, size_t len) {
 
 static void json5_value_delete (json5_value * value, json5_type type);
 
+/**
+ * Delete string `value`.
+ */
 static void json5_value_delete_string (json5_value * value) {
 	if (value -> str.s) {
 		free (value -> str.s);
 	}
 }
 
+/**
+ * Delete items of array `value`.
+ */
 static void json5_value_delete_array (json5_value * value) {
 	for (size_t i = 0; i < value -> arr.len; i ++) {
 		json5_value_delete (&value -> arr.itms [i], JSON5_TYPE_NULL);
@@ -62,6 +68,9 @@ static void json5_value_delete_array (json5_value * value) {
 	}
 }
 
+/**
+ * Delete key-value pairs object object `value`.
+ */
 static void json5_value_delete_object (json5_value * value) {
 	json5_obj_prop * prop;
 

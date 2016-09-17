@@ -81,7 +81,7 @@ struct json5_obj_itor {
 };
 
 /**
- * Initializes a statically allocated `json5_value` with `null`.
+ * Constant to initialize a statically allocated `json5_value` with `null`.
  *
  * Values with cleared memory are also valid.
  */
@@ -172,7 +172,7 @@ extern json5_value * json5_value_get_prop (json5_value * value, char const * key
  * Initializes the value with `null`.
  * If `value` is not an object, NULL is returned.
  * If `key_len` is -1, the length is determined with `strlen`.
- * Replaces current value content.
+ * Replaces current value content if `replace` is 1 otherwise NULL is returned.
  * Returns reference to inserted property.
  */
 extern json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len, int replace);

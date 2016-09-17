@@ -175,7 +175,7 @@ extern json5_value * json5_value_get_prop (json5_value * value, char const * key
  * Replaces current value content.
  * Returns reference to inserted property.
  */
-extern json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len);
+extern json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len, int replace);
 
 /**
  * Delete property with key.

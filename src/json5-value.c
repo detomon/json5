@@ -300,7 +300,7 @@ static int json5_object_grow (json5_value * value) {
 	return 0;
 }
 
-json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len) {
+json5_value * json5_value_set_prop (json5_value * value, char const * key, size_t key_len, int replace) {
 	json5_hash hash;
 	json5_obj_prop * prop;
 	uint8_t * new_key;
@@ -330,13 +330,20 @@ json5_value * json5_value_set_prop (json5_value * value, char const * key, size_
 		prop = json5_prop_lookup (value -> props, value -> cap - 1, hash, (uint8_t const *)key, key_len);
 	}
 
+	if (prop->key > PLACEHOLDER_KEY && !replace) {
+		return NULL;
+	}
+
 	new_key = string_copy ((uint8_t const *) key, key_len);
 
 	if (!new_key) {
 		return NULL;
 	}
 
-	if (!prop -> key) {
+	if (prop -> key >= PLACEHOLDER_KEY) {
+		free (prop -> key);
+	}
+	else {
 		value -> len ++;
 	}
 

@@ -461,7 +461,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 							}
 						}
 						else {
-							if (!(value = json5_value_set_prop (item -> value, (char *) token -> token, token -> length))) {
+							if (!(value = json5_value_set_prop (item -> value, (char *) token -> token, token -> length, 1))) {
 								goto alloc_error;
 							}
 						}

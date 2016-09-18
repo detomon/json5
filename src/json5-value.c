@@ -44,15 +44,11 @@ static uint8_t * string_copy (uint8_t const * str, size_t len) {
 	return new_str;
 }
 
-static void json5_value_reset (json5_value * value, json5_type type);
-
 /**
  * Delete string `value`.
  */
 static void json5_value_delete_string (json5_value * value) {
-	if (value -> sval) {
-		free (value -> sval);
-	}
+	free (value -> sval);
 }
 
 /**
@@ -63,9 +59,7 @@ static void json5_value_delete_array (json5_value * value) {
 		json5_value_reset (&value -> items [i], JSON5_TYPE_NULL);
 	}
 
-	if (value -> items) {
-		free (value -> items);
-	}
+	free (value -> items);
 }
 
 /**
@@ -82,15 +76,13 @@ static void json5_value_delete_object (json5_value * value) {
 		}
 	}
 
-	if (value -> props) {
-		free (value -> props);
-	}
+	free (value -> props);
 }
 
 /**
  * Delete current `value` and set new `type`.
  */
-static void json5_value_reset (json5_value * value, json5_type type) {
+void json5_value_reset (json5_value * value, json5_type type) {
 	if (value -> type == type) {
 		return;
 	}
@@ -117,34 +109,6 @@ static void json5_value_reset (json5_value * value, json5_type type) {
 	value -> type = type;
 }
 
-void json5_value_set_int (json5_value * value, int64_t i) {
-	json5_value_reset (value, JSON5_TYPE_INT);
-	value -> ival = i;
-}
-
-void json5_value_set_float (json5_value * value, double f) {
-	json5_value_reset (value, JSON5_TYPE_FLOAT);
-	value -> fval = f;
-}
-
-void json5_value_set_bool (json5_value * value, int b) {
-	json5_value_reset (value, JSON5_TYPE_BOOL);
-	value -> ival = b != 0;
-}
-
-void json5_value_set_nan (json5_value * value) {
-	json5_value_reset (value, JSON5_TYPE_NAN);
-}
-
-void json5_value_set_infinity (json5_value * value, int sign) {
-	json5_value_reset (value, JSON5_TYPE_INFINITY);
-	value -> ival = sign >= 0 ? 1 : -1;
-}
-
-void json5_value_set_null (json5_value * value) {
-	json5_value_reset (value, JSON5_TYPE_NULL);
-}
-
 int json5_value_set_string (json5_value * value, char const * str, size_t len) {
 	uint8_t * new_str;
 
@@ -158,20 +122,18 @@ int json5_value_set_string (json5_value * value, char const * str, size_t len) {
 		return -1;
 	}
 
-	json5_value_reset (value, JSON5_TYPE_STRING);
+	if (value -> type >= JSON5_TYPE_STRING) {
+		json5_value_reset (value, JSON5_TYPE_STRING);
+	}
+	else {
+		value -> type = JSON5_TYPE_STRING;
+	}
+
+	value -> sval = new_str;
 	value -> len = len;
 	value -> cap = len;
-	value -> sval = new_str;
 
 	return 0;
-}
-
-void json5_value_set_array (json5_value * value) {
-	json5_value_reset (value, JSON5_TYPE_ARRAY);
-}
-
-void json5_value_set_object (json5_value * value) {
-	json5_value_reset (value, JSON5_TYPE_OBJECT);
 }
 
 json5_value * json5_value_get_item (json5_value * value, size_t idx) {
@@ -223,8 +185,9 @@ static json5_hash json5_get_hash (char const * key, size_t key_len) {
 	return hash;
 }
 
-static json5_obj_prop * json5_prop_lookup (json5_obj_prop * props, size_t mask, json5_hash hash, uint8_t const * key, size_t key_len) {
+static json5_obj_prop * json5_prop_lookup (json5_obj_prop * props, size_t cap, json5_hash hash, uint8_t const * key, size_t key_len) {
 	json5_hash i = hash, perturb = hash;
+	size_t mask = cap - 1;
 	json5_obj_prop * prop = &props [i & mask];
 
 	while (prop -> key) {
@@ -258,7 +221,7 @@ json5_value * json5_value_get_prop (json5_value * value, char const * key, size_
 	}
 
 	hash = json5_get_hash (key, key_len);
-	prop = json5_prop_lookup (value -> props, value -> cap - 1, hash, (uint8_t const *) key, key_len);
+	prop = json5_prop_lookup (value -> props, value -> cap, hash, (uint8_t const *) key, key_len);
 
 	if (prop -> key > PLACEHOLDER_KEY) {
 		return &prop -> value;
@@ -290,9 +253,7 @@ static int json5_object_grow (json5_value * value) {
 		}
 	}
 
-	if (value -> props) {
-		free (value -> props);
-	}
+	free (value -> props);
 
 	value -> cap = new_cap;
 	value -> props = new_props;
@@ -320,14 +281,14 @@ json5_value * json5_value_set_prop (json5_value * value, char const * key, size_
 	}
 
 	hash = json5_get_hash (key, key_len);
-	prop = json5_prop_lookup (value -> props, value -> cap - 1, hash, (uint8_t const *) key, key_len);
+	prop = json5_prop_lookup (value -> props, value -> cap, hash, (uint8_t const *) key, key_len);
 
 	if (value -> len + (value -> len / 2) > value -> cap) {
 		if (json5_object_grow (value) != 0) {
 			return NULL;
 		}
 
-		prop = json5_prop_lookup (value -> props, value -> cap - 1, hash, (uint8_t const *)key, key_len);
+		prop = json5_prop_lookup (value -> props, value -> cap, hash, (uint8_t const *)key, key_len);
 	}
 
 	if (prop->key > PLACEHOLDER_KEY && !replace) {
@@ -368,7 +329,7 @@ int json5_value_delete_prop (json5_value * value, char const * key, size_t key_l
 	}
 
 	hash = json5_get_hash (key, key_len);
-	prop = json5_prop_lookup (value -> props, value -> cap - 1, hash, (uint8_t const *) key, key_len);
+	prop = json5_prop_lookup (value -> props, value -> cap, hash, (uint8_t const *) key, key_len);
 
 	if (prop -> key) {
 		free (prop -> key);

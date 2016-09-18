@@ -1,7 +1,6 @@
 #include "test.h"
 
-int main (int argc, char const * argv [])
-{
+int main (int argc, char const * argv []) {
 	json5_value value = JSON5_VALUE_INIT;
 	json5_value * item;
 

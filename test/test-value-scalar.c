@@ -1,7 +1,6 @@
 #include "test.h"
 
-int main (int argc, char const * argv [])
-{
+int main (int argc, char const * argv []) {
 	json5_value value = JSON5_VALUE_INIT;
 	json5_value * item;
 
@@ -25,11 +24,11 @@ int main (int argc, char const * argv [])
 
 	json5_value_set_infinity (&value, 5);
 	assert (value.type == JSON5_TYPE_INFINITY);
-	assert (value.ival == 1);
+	assert (value.ival == 0);
 
 	json5_value_set_infinity (&value, -6);
 	assert (value.type == JSON5_TYPE_INFINITY);
-	assert (value.ival == -1);
+	assert (value.ival == 1);
 
 	json5_value_set_string (&value, "akey2", 5);
 	assert (value.type == JSON5_TYPE_STRING);

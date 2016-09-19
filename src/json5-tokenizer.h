@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016 Simon Schoenenberger
  * https://github.com/detomon/json5
  *

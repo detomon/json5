@@ -352,6 +352,7 @@ static inline void json5_value_set_array (json5_value * value) {
 		}
 		else {
 			value -> type = JSON5_TYPE_ARRAY;
+			value -> items = NULL;
 		}
 	}
 }
@@ -363,6 +364,7 @@ static inline void json5_value_set_object (json5_value * value) {
 		}
 		else {
 			value -> type = JSON5_TYPE_OBJECT;
+			value -> props = NULL;
 		}
 	}
 }

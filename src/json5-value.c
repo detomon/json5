@@ -56,7 +56,7 @@ static void json5_value_delete_string (json5_value * value) {
  */
 static void json5_value_delete_array (json5_value * value) {
 	for (size_t i = 0; i < value -> len; i ++) {
-		json5_value_reset (&value -> items [i], JSON5_TYPE_NULL);
+		json5_value_set_null (&value -> items [i]);
 	}
 
 	free (value -> items);
@@ -72,7 +72,7 @@ static void json5_value_delete_object (json5_value * value) {
 		prop = &value -> props [i];
 
 		if (prop -> key > PLACEHOLDER_KEY) {
-			json5_value_reset (&prop -> value, JSON5_TYPE_NULL);
+			json5_value_set_null (&prop -> value);
 		}
 	}
 
@@ -112,26 +112,38 @@ void json5_value_reset (json5_value * value, json5_type type) {
 int json5_value_set_string (json5_value * value, char const * str, size_t len) {
 	uint8_t * new_str;
 
+	if (value -> type != JSON5_TYPE_STRING) {
+		if (value -> type >= JSON5_TYPE_STRING) {
+			json5_value_reset (value, JSON5_TYPE_STRING);
+		}
+		else {
+			value -> type = JSON5_TYPE_STRING;
+		}
+
+		value -> sval = NULL;
+	}
+
 	if (len == (size_t) -1) {
 		len = strlen (str);
 	}
 
-	new_str = string_copy ((uint8_t const *) str, len);
+	new_str = value -> sval;
 
-	if (!new_str) {
-		return -1;
+	if (len > value -> cap) {
+		new_str = realloc (new_str, value -> len + 1);
+
+		if (!new_str) {
+			return -1;
+		}
+
+		value -> cap = len;
 	}
 
-	if (value -> type >= JSON5_TYPE_STRING) {
-		json5_value_reset (value, JSON5_TYPE_STRING);
-	}
-	else {
-		value -> type = JSON5_TYPE_STRING;
-	}
+	memcpy (new_str, str, len);
+	new_str [len] = '\0';
 
 	value -> sval = new_str;
 	value -> len = len;
-	value -> cap = len;
 
 	return 0;
 }

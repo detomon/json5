@@ -450,6 +450,7 @@ int json5_parser_put_tokens (json5_parser * parser, json5_token const * tokens, 
 				switch (token -> type) {
 					case JSON5_TOK_NAME:
 					case JSON5_TOK_STRING:
+					case JSON5_TOK_NUMBER_BOOL:
 					case JSON5_TOK_NULL:
 					case JSON5_TOK_NAN:
 					case JSON5_TOK_INFINITY: {

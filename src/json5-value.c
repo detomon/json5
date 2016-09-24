@@ -130,7 +130,7 @@ int json5_value_set_string (json5_value * value, char const * str, size_t len) {
 	new_str = value -> sval;
 
 	if (len > value -> cap) {
-		new_str = realloc (new_str, value -> len + 1);
+		new_str = realloc (new_str, len + 1);
 
 		if (!new_str) {
 			return -1;

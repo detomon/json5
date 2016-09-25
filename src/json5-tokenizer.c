@@ -60,8 +60,12 @@ typedef enum {
 	JSON5_STATE_STRING,
 	JSON5_STATE_STRING_BEGIN,   // '"' or "'"
 	JSON5_STATE_STRING_ESCAPE,  // '\'
-	JSON5_STATE_STRING_HEXCHAR, // 'x'
-	JSON5_STATE_STRING_HEXCHAR_BEGIN, // 'x'
+	JSON5_STATE_STRING_HEXCHAR,
+	JSON5_STATE_STRING_HEXCHAR_BEGIN, // 'x', 'u'
+	JSON5_STATE_STRING_HEXCHAR_SURR, //
+	JSON5_STATE_STRING_HEXCHAR_SURR_SEQ, // '\'
+	JSON5_STATE_STRING_HEXCHAR_SURR_ESCAPE, // 'u'
+	JSON5_STATE_STRING_HEXCHAR_SURR_BEGIN,
 	JSON5_STATE_STRING_MULTILINE,
 	JSON5_STATE_STRING_MULTILINE_END,
 	JSON5_STATE_NUMBER,
@@ -800,6 +804,46 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 					state = JSON5_STATE_STRING_HEXCHAR;
 					break;
 				}
+				case JSON5_STATE_STRING_HEXCHAR_SURR_SEQ: {
+					switch (char_type) {
+						case JSON5_TOK_ESCAPE: {
+							state = JSON5_STATE_STRING_HEXCHAR_SURR_ESCAPE;
+							break;
+						}
+						default: {
+							goto expected_low_surrogate;
+							break;
+						}
+					}
+					break;
+				}
+				case JSON5_STATE_STRING_HEXCHAR_SURR_ESCAPE: {
+					if (c == 'u') {
+						state = JSON5_STATE_STRING_HEXCHAR_SURR_BEGIN;
+						tknzr -> aux_count = 4;
+					}
+					else {
+						goto unexpected_char;
+					}
+					break;
+				}
+				case JSON5_STATE_STRING_HEXCHAR_SURR:
+				case JSON5_STATE_STRING_HEXCHAR_SURR_BEGIN: {
+					if (c < 128) {
+						if (char_types [c].hex) {
+							value = char_types [c].hex & HEX_VAL_MASK;
+						}
+						else {
+							goto invalid_hex_char;
+						}
+					}
+					else {
+						goto invalid_hex_char;
+					}
+
+					state = JSON5_STATE_STRING_HEXCHAR_SURR;
+					break;
+				}
 				case JSON5_STATE_NUMBER_SIGN: {
 					switch (char_type) {
 						case JSON5_TOK_NUMBER: {
@@ -1133,8 +1177,34 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 
 					if (-- tknzr -> aux_count == 0) {
 						value = tknzr -> seq_value;
-						state = JSON5_STATE_STRING;
-						json5_tokenizer_put_mb_char (tknzr, value);
+
+						// high surrogate
+						if ((value & 0xFC00) == 0xD800) {
+							tknzr -> seq_value = (value - 0xD800) << 16; // save value
+							state = JSON5_STATE_STRING_HEXCHAR_SURR_SEQ;
+						}
+						else {
+							state = JSON5_STATE_STRING;
+							json5_tokenizer_put_mb_char (tknzr, value);
+						}
+					}
+					break;
+				}
+				case JSON5_STATE_STRING_HEXCHAR_SURR: {
+					tknzr -> seq_value = (tknzr -> seq_value & ~0xFFFF) | ((tknzr -> seq_value & 0xFFFF) << 4) | value;
+
+					if (-- tknzr -> aux_count == 0) {
+						value = tknzr -> seq_value;
+
+						// low surrogate
+						if ((value & 0xFC00) == 0xDC00) {
+							value = 0x10000 + (value >> 16) * 0x400 + ((value & 0xFFFF) - 0xDC00);
+							state = JSON5_STATE_STRING;
+							json5_tokenizer_put_mb_char (tknzr, value);
+						}
+						else {
+							goto expected_low_surrogate;
+						}
 					}
 					break;
 				}
@@ -1283,6 +1353,13 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 			json5_tokenizer_set_error (tknzr, "Invalid byte '\\x%02x' for Unicode sequence on line %d:%d",
 				c, offset.lineno + 1, offset.colno);
 		}
+
+		goto error;
+	}
+
+	expected_low_surrogate: {
+		json5_tokenizer_set_error (tknzr, "Unicode error: Expected low surrogate sequence on line %d:%d",
+			offset.lineno + 1, offset.colno);
 
 		goto error;
 	}

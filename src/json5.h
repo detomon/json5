@@ -32,6 +32,7 @@ extern "C" {
 #endif
 
 #include "json5-coder.h"
+#include "json5-parser.h"
 #include "json5-tokenizer.h"
 #include "json5-value.h"
 #include "json5-writer.h"

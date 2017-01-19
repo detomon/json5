@@ -1,4 +1,4 @@
-SUBDIRS = src test unicode-table
+SUBDIRS = src test unicode-table utf8-validator
 DIST_SUBDIRS = src test
 
 EXTRA_DIST = \

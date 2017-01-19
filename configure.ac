@@ -61,7 +61,10 @@ export UT_SNAKE_CASE=1
 export UT_CATEGORIES="Lu,Ll,Lt,Lm,Lo,Nl,Nd,Mn,Mc,Zp,Zs"
 export UT_INCLUDE_INFO="flags,categories"
 
-AC_CONFIG_SUBDIRS([unicode-table])
+AC_CONFIG_SUBDIRS([
+	unicode-table
+	utf8-validator
+])
 
 AC_SUBST([AM_CFLAGS])
 

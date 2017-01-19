@@ -1,3 +1,6 @@
 [submodule "unicode-table"]
 	path = unicode-table
 	url = https://github.com/detomon/unicode-table.git
+[submodule "utf8-validator"]
+	path = utf8-validator
+	url = https://github.com/detomon/utf8-validator.git

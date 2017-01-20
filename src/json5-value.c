@@ -360,7 +360,7 @@ void json5_value_transfer (json5_value * target, json5_value * source) {
 
 	if (source) {
 		*target = *source;
-		json5_value_set_null (source);
+		*source = JSON5_VALUE_INIT;
 	}
 }
 

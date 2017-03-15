@@ -205,12 +205,9 @@ static void json5_tokenizer_relocate_token_data (json5_tokenizer * tknzr, uint8_
 }
 
 static int json5_tokenizer_ensure_buffer_space (json5_tokenizer * tknzr, size_t size) {
-	size_t new_cap;
-	uint8_t * new_buf;
-
 	if (tknzr -> buffer_len + size + BUF_MIN_FREE_SPACE >= tknzr -> buffer_cap) {
-		new_cap = tknzr -> buffer_cap * 2;
-		new_buf = realloc (tknzr -> buffer, new_cap);
+		size_t new_cap = tknzr -> buffer_cap * 2;
+		uint8_t * new_buf = realloc (tknzr -> buffer, new_cap);
 
 		if (!new_buf) {
 			return -1;
@@ -379,14 +376,10 @@ static void json5_number_init (json5_tokenizer * tknzr)
 }
 
 static void json5_tokenizer_number_end (json5_tokenizer * tknzr) {
-	int n;
-	double d;
-	double e;
-
 	if (tknzr -> number.type == JSON5_NUM_FLOAT) {
-		d = 10.0;
-		e = 1.0;
-		n = tknzr -> number.exp;
+		double d = 10.0;
+		double e = 1.0;
+		int n = tknzr -> number.exp;
 
 		if (tknzr -> number.exp_sign) {
 			n = -n;
@@ -432,9 +425,6 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 	int c = 0;
 	int state = 0;
 	int value = 0;
-	int res = 0;
-	int accept;
-	int again;
 	json5_off offset;
 	json5_tok_type char_type = 0;
 	json5_token * token;
@@ -562,6 +552,9 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 		else {
 			offset.colno ++;
 		}
+
+		int again;
+		int accept;
 
 		do {
 			again = 0;
@@ -1223,8 +1216,11 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
 			}
 
 			if (accept) {
+				int res;
+
 				token = &tknzr -> token;
 				token -> length = &tknzr -> buffer [tknzr -> buffer_len] - token -> token;
+
 				json5_tokenizer_end_buffer (tknzr);
 
 				switch (token -> type) {
@@ -1381,11 +1377,10 @@ static int json5_tokenizer_put_chars_chunk (json5_tokenizer * tknzr, uint8_t con
  */
 int json5_tokenizer_put_chars (json5_tokenizer * tknzr, uint8_t const * chars, size_t size, json5_put_token_func put_token, void * arg) {
 	int res = 0;
-	size_t chunk_size;
-	size_t const max_size = 1024;
 
 	do {
-		chunk_size = size > max_size ? max_size : size;
+		size_t const max_size = 1024;
+		size_t chunk_size = size > max_size ? max_size : size;
 
 		if ((res = json5_tokenizer_put_chars_chunk (tknzr, chars, chunk_size, put_token, arg)) != 0) {
 			break;

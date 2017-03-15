@@ -335,7 +335,7 @@ PHP_FUNCTION(json5_decode)
 {
 	int res;
 	zend_string *string;
-	zval assoc;
+	zend_bool assoc;
 	zval recursion;
 	zval options;
 	json5_coder coder;
@@ -345,7 +345,7 @@ PHP_FUNCTION(json5_decode)
 	_json5_stack stack;
 	size_t numArgs = ZEND_NUM_ARGS();
 
-	ZVAL_BOOL(&assoc, 0);
+	assoc = 0;
 	ZVAL_LONG(&recursion, 0);
 	ZVAL_LONG(&options, 0);
 
@@ -354,7 +354,7 @@ PHP_FUNCTION(json5_decode)
 	}
 
 	if (numArgs > 1) {
-		if (Z_LVAL(assoc)) {
+		if (assoc) {
 			flags |= JSON5_FLAGS_ASSOC;
 		}
 	}

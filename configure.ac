@@ -64,7 +64,6 @@ export UT_STRICT_LEVEL=1
 
 AC_CONFIG_SUBDIRS([
 	unicode-table
-	utf8-validator
 ])
 
 AC_SUBST([AM_CFLAGS])

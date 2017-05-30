@@ -1,8 +1,10 @@
+SUB_MODULES = unicode-table
+
 DIST_SUBDIRS = src test
-SUBDIRS = unicode-table $(DIST_SUBDIRS)
+SUBDIRS = $(SUB_MODULES) $(DIST_SUBDIRS)
 
 EXTRA_DIST = \
-	README.md \
+	autogen.sh \
 	CHANGELOG.md \
-	VERSION \
-	autogen.sh
+	README.md \
+	VERSION
